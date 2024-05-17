@@ -5,6 +5,7 @@ use async_graphql::Schema;
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::routing::post;
 use axum::Router;
+use serde_json::to_string;
 use tracing::{info, instrument};
 use tracing_appender::rolling::daily;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -23,12 +24,17 @@ mod user_service;
 
 #[instrument(skip(graph_glrequest))]
 async fn graphql_handler(graph_glrequest: GraphQLRequest) -> GraphQLResponse {
+    let inner_request = graph_glrequest.into_inner();
+    // Serialize the incoming request to a string
+    let request_string =
+        to_string(&inner_request).unwrap_or_else(|e| format!("Failed to serialize request: {}", e));
+
     // Log the incoming request
-    info!("Received GraphQL request");
+    info!("Received GraphQL request: {}", request_string);
     let query = Query { db: DB };
     let schema = Schema::new(query, EmptyMutation, EmptySubscription);
 
-    let res = schema.execute(graph_glrequest.into_inner()).await;
+    let res = schema.execute(inner_request).await;
     // Log the response
     info!("GraphQL response: {:?}", res);
     res.into()
