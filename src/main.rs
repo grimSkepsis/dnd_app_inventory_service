@@ -69,8 +69,10 @@ async fn main() {
         .expect("Failed to initialize logging");
     let app = Router::new().route("/graphql", post(graphql_handler));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0:3000".to_string());
+    let listener = tokio::net::TcpListener::bind(&host).await.unwrap();
 
-    println!("Playground: http://localhost:3000/graphql");
+    println!("GQL on: {host}");
+
     axum::serve(listener, app).await.unwrap()
 }
