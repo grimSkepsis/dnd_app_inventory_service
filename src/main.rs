@@ -5,7 +5,9 @@ use async_graphql::Schema;
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::routing::post;
 use axum::Router;
+use dotenv::dotenv;
 use serde_json::to_string;
+use std::env;
 use tracing::{info, instrument};
 use tracing_appender::rolling::daily;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -42,23 +44,29 @@ async fn graphql_handler(graph_glrequest: GraphQLRequest) -> GraphQLResponse {
 
 #[tokio::main]
 async fn main() {
+    // Load .env file
+    dotenv().ok();
+    println!("RUST_LOG: {:?}", env::var("RUST_LOG"));
+    // log_dotenv_vars();
     let file_appender = daily("logs", "app.log");
 
     // Initialize logging
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let is_debug = env::var("RUST_LOG")
+        .map(|val| val == "debug")
+        .unwrap_or(false);
     let formatting_layer = tracing_subscriber::fmt::layer()
         .with_writer(file_appender.and(std::io::stdout))
         .with_timer(tracing_subscriber::fmt::time::UtcTime::rfc_3339()) // Use SystemTime for simplicity
         .with_span_events(FmtSpan::CLOSE)
-        .with_target(false)
-        .with_thread_ids(false);
+        .with_target(is_debug)
+        .with_thread_ids(is_debug);
 
     tracing_subscriber::registry()
         .with(env_filter)
         .with(formatting_layer)
         .try_init()
         .expect("Failed to initialize logging");
-
     let app = Router::new().route("/graphql", post(graphql_handler));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();

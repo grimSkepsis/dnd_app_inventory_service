@@ -37,3 +37,4 @@
 .Trashes
 
 logs/*
+.env
