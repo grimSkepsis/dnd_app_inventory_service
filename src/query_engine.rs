@@ -1,6 +1,6 @@
 use crate::db::DB;
-use async_graphql::Object;
 use crate::user_service::User;
+use async_graphql::Object;
 
 pub struct Query {
     pub db: DB,
@@ -17,6 +17,10 @@ impl Query {
     }
 
     pub async fn get_user(&self, id: String) -> Option<User> {
-        self.db.get_data().iter().find(|user| user.id.0 == id).cloned()
+        self.db
+            .get_data()
+            .iter()
+            .find(|user| user.id.0 == id)
+            .cloned()
     }
 }

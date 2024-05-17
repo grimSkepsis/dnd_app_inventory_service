@@ -1,11 +1,16 @@
 [package]
-name = "rust-web-server"
+name = "rust-inventory-db"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 async-graphql = "7.0.3"
 async-graphql-axum = "7.0.3"
 axum = "0.7.5"
+chrono = "0.4.38"
 serde = "1.0.200"
 tokio = { version = "1.37.0", features = ["full"] }
+tracing = "0.1.40"
+tracing-appender = "0.2.3"
+tracing-log = "0.2.0"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
