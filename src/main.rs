@@ -36,26 +36,13 @@ async fn graphql_handler(graph_glrequest: GraphQLRequest) -> GraphQLResponse {
 
 #[tokio::main]
 async fn main() {
-    // Create a rolling file appender
-    // let file_appender = tracing_appender::rolling::daily("logs", "app.log");
-
-    // // Initialize logging with file appender
-    // tracing_subscriber::fmt()
-    //     .with_env_filter(EnvFilter::from_default_env().or_else("info")) // Default to `info` level
-    //     .with_writer(file_appender.and(std::io::stdout)) // Log to file and stdout
-    //     .with_format(tracing_subscriber::fmt::format().compact()) // Compact log format
-    //     .with_target(false) // Disable module paths in logs
-    //     .with_thread_ids(false) // Disable thread IDs in logs
-    //     .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE) // Only log span close events
-    //     .init();
-
     let file_appender = daily("logs", "app.log");
 
     // Initialize logging
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
     let formatting_layer = tracing_subscriber::fmt::layer()
         .with_writer(file_appender.and(std::io::stdout))
-        .with_timer(tracing_subscriber::fmt::time::SystemTime) // Use SystemTime for simplicity
+        .with_timer(tracing_subscriber::fmt::time::UtcTime::rfc_3339()) // Use SystemTime for simplicity
         .with_span_events(FmtSpan::CLOSE)
         .with_target(false)
         .with_thread_ids(false);
