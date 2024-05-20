@@ -6,6 +6,7 @@ use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::routing::post;
 use axum::Router;
 use dotenv::dotenv;
+use neo4rs::{Graph, Node};
 use serde_json::to_string;
 use std::env;
 use tracing::{info, instrument};
@@ -71,6 +72,38 @@ async fn main() {
 
     let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0:3000".to_string());
     let listener = tokio::net::TcpListener::bind(&host).await.unwrap();
+
+    let uri = env::var("NEO4J_URI").unwrap_or_else(|_| "neo4j://localhost:7687".to_string());
+    let user = env::var("NEO4J_USER").unwrap_or_else(|_| "neo4j".to_string());
+    let pass = env::var("NEO4J_PASSWORD").unwrap_or_else(|_| "neo4j".to_string());
+    let graph = Graph::new(uri, user, pass).await.unwrap();
+
+    let query = "MATCH (p:Character {name: $name})-[:OWNS]->(inv:Inventory)-[:CONTAINS]->(item:Variant) RETURN item.name, item.effect";
+
+    // Set your parameters
+    let parameters = neo4rs::query(query).param("name", "Thorrun");
+
+    // Run the query
+    let mut result = graph.execute(parameters).await.unwrap();
+
+    // Iterate and process the results
+    while let Ok(Some(row)) = result.next().await {
+        // Log the raw row for debugging
+        println!("{:?}", row);
+
+        // Safely extract the fields
+        let name: Result<String, _> = row.get("item.name");
+        // let description: Result<String, _> = row.get("description");
+        let effect: Result<String, _> = row.get("item.effect");
+        match (name, effect) {
+            (Ok(name), Ok(effect)) => {
+                println!("Item: {}, Effect: {}", name, effect);
+            }
+            (Err(e), _) | (_, Err(e)) => {
+                eprintln!("Error extracting row: {:?}", e);
+            }
+        }
+    }
 
     println!("GQL on: {host}");
 
