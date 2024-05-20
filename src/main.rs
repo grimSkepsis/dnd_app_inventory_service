@@ -82,11 +82,8 @@ async fn main() {
         "MATCH (p:Character {name: $name})-[:OWNS]->(inv:Inventory)-[:CONTAINS]->(item:Item)
         OPTIONAL MATCH (item)-[:HAS_BASE]->(baseItem:ItemBase)
         RETURN
-        CASE WHEN baseItem.name IS NOT NULL
-             THEN baseItem.name + ' (' + item.name + ')'
-             ELSE item.name
-        END AS name,
         COALESCE(item.description, baseItem.description) as description,
+        COALESCE(baseItem.name + ' (' + item.name + ')', item.name) AS name,
         item.effect as effect";
 
     // Set your parameters
