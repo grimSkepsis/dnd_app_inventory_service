@@ -1,4 +1,5 @@
 use crate::db::DB;
+use crate::inventory_service::Inventory;
 use crate::user_service::User;
 use async_graphql::Object;
 
@@ -12,6 +13,9 @@ impl Query {
     //     Query { db }
     // }
 
+    pub async fn get_inventory(&self, id: String) -> Option<Inventory> {
+        Some(self.db.get_inventory_by_uuid(id))
+    }
     pub async fn get_users(&self) -> Vec<User> {
         self.db.get_data()
     }

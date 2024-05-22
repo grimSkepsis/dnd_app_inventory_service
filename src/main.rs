@@ -22,6 +22,7 @@ use crate::query_engine::Query;
 mod db;
 // pub mod db_v1;
 // pub use db_v1 as db;
+mod inventory_service;
 mod query_engine;
 mod user_service;
 
