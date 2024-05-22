@@ -9,22 +9,15 @@ pub struct Query {
 
 #[Object]
 impl Query {
-    // pub fn new(db: Db) -> Self {
-    //     Query { db }
-    // }
-
     pub async fn get_inventory(&self, id: String) -> Option<Inventory> {
-        Some(self.db.get_inventory_by_uuid(id))
-    }
-    pub async fn get_users(&self) -> Vec<User> {
-        self.db.get_data()
+        self.db.get_inventory_by_uuid(id).await
     }
 
-    pub async fn get_user(&self, id: String) -> Option<User> {
-        self.db
-            .get_data()
-            .iter()
-            .find(|user| user.id.0 == id)
-            .cloned()
+    pub async fn get_chracter_inventory(&self, id: String) -> Option<Inventory> {
+        self.db.get_inventory_by_character_uuid(id).await
+    }
+
+    pub async fn get_inventory_by_owner(&self, id: String) -> Option<Inventory> {
+        self.db.get_inventory_by_owner_uuid(id).await
     }
 }

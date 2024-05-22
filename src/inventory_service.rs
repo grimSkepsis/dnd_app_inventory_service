@@ -1,7 +1,7 @@
 use async_graphql::Object;
 use async_graphql::ID;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Inventory {
     pub uuid: ID,
     pub name: String,
@@ -36,5 +36,9 @@ impl Inventory {
 
     async fn gp(&self) -> u32 {
         self.gp
+    }
+
+    async fn pp(&self) -> u32 {
+        self.pp
     }
 }

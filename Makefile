@@ -15,5 +15,9 @@ init_local_db:
 	docker pull neo4j:latest
 	docker run --name neo4j -d -p 7474:7474 -p 7687:7687 -v $(shell pwd)/../neo4j/data:/data -v $(shell pwd)/../neo4j/logs:/logs -v $(shell pwd)/../neo4j/import:/var/lib/neo4j/import -v $(shell pwd)/../neo4j/plugins:/plugins --env NEO4J_AUTH=neo4j/$(NEO4J_PASSWORD) neo4j:latest
 	@echo "db running on http://localhost:7474/"
+
 run:
 	cargo run
+
+dev:
+	cargo watch -x 'run'
