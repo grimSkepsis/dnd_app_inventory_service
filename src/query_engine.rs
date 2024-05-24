@@ -1,6 +1,7 @@
 use crate::db::DB;
 use crate::inventory_item_service::InventoryItem;
 use crate::inventory_service::Inventory;
+use crate::pagination_service::PaginatedResponse;
 use async_graphql::Object;
 
 pub struct Query {
@@ -26,7 +27,7 @@ impl Query {
         inventory_id: String,
         page: u32,
         page_size: u32,
-    ) -> Option<Vec<InventoryItem>> {
+    ) -> Option<PaginatedResponse<InventoryItem>> {
         self.db
             .get_inventory_items(inventory_id, page, page_size)
             .await

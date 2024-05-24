@@ -1,5 +1,6 @@
 use crate::inventory_item_service::InventoryItem;
 use crate::inventory_service::Inventory;
+use crate::pagination_service::PaginatedResponse;
 use neo4rs::{BoltNode, Graph, Row};
 
 pub struct DB {
@@ -45,7 +46,7 @@ impl DB {
         inventory_uuid: String,
         page: u32,
         page_size: u32,
-    ) -> Option<Vec<InventoryItem>> {
+    ) -> Option<PaginatedResponse<InventoryItem>> {
         let skip = (page - 1) * page_size;
         let query =
             "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item)
@@ -70,7 +71,13 @@ impl DB {
         while let Ok(Some(row)) = result.next().await {
             items.push(self.parse_inventory_item(&row).unwrap());
         }
-        Some(items)
+        Some(PaginatedResponse {
+            entities: items,
+            page: 1,
+            page_size: 10,
+            total: 10,
+            total_pages: 1,
+        })
     }
 
     fn parse_inventory_item(&self, row: &Row) -> Option<InventoryItem> {

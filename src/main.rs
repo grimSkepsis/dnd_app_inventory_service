@@ -21,6 +21,7 @@ use crate::query_engine::Query;
 mod db;
 mod inventory_item_service;
 mod inventory_service;
+mod pagination_service;
 mod query_engine;
 mod user_service;
 
