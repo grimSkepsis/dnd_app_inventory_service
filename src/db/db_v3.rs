@@ -50,7 +50,8 @@ impl DB {
         let skip = (page - 1) * page_size;
         let query =
             "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item)
-                        OPTIONAL MATCH (item)-[:HAS_BASE]->(base:ItemBase) return
+                        OPTIONAL MATCH (item)-[:HAS_BASE]->(base:ItemBase)
+                        RETURN
                         item.uuid as uuid,
                         c.quantity as quantity,
                         COALESCE(item.effect, 'No effect') as effect,
@@ -61,23 +62,36 @@ impl DB {
                         COALESCE(base.name +' ('+item.name+')', item.name) as name,
                         COALESCE(item.description, base.description, 'No description') as description,
                         COALESCE(item.activation_cost, base.activation_cost, 'Not activatible') as activation_cost,
-                        COALESCE(item.usage_requirements, base.usage_requirements) as usage_requirements SKIP $skip LIMIT $limit";
+                        COALESCE(item.usage_requirements, base.usage_requirements) as usage_requirements
+                        SKIP $skip LIMIT $limit";
+        let count_query =
+            "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item) RETURN count(item) as total";
         let parameters = neo4rs::query(query)
-            .params([("uuid", inventory_uuid)])
+            .params([("uuid", inventory_uuid.clone())])
             .params([("skip", skip), ("limit", page_size)]);
 
         let mut result = self.graph.execute(parameters).await.unwrap();
+        let mut count_result = self
+            .graph
+            .execute(neo4rs::query(count_query).param("uuid", inventory_uuid))
+            .await
+            .unwrap();
         let mut items = Vec::new();
         while let Ok(Some(row)) = result.next().await {
             items.push(self.parse_inventory_item(&row).unwrap());
         }
-        Some(PaginatedResponse {
-            entities: items,
-            page: 1,
-            page_size: 10,
-            total: 10,
-            total_pages: 1,
-        })
+        if let Ok(Some(row)) = count_result.next().await {
+            let total_entities = row.get("total").unwrap();
+            let total_pages = (total_entities as f32 / page_size as f32).ceil() as u32;
+            return Some(PaginatedResponse {
+                entities: items,
+                page,
+                page_size,
+                total_entities,
+                total_pages,
+            });
+        }
+        None
     }
 
     fn parse_inventory_item(&self, row: &Row) -> Option<InventoryItem> {
