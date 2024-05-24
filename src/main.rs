@@ -19,6 +19,7 @@ use crate::db::DB;
 use crate::query_engine::Query;
 
 mod db;
+mod inventory_item_service;
 mod inventory_service;
 mod query_engine;
 mod user_service;
@@ -39,7 +40,6 @@ async fn main() {
     // Load .env file
     dotenv().ok();
     println!("RUST_LOG: {:?}", env::var("RUST_LOG"));
-    // log_dotenv_vars();
     let file_appender = daily("logs", "app.log");
 
     // Initialize logging

@@ -1,6 +1,6 @@
 use crate::db::DB;
+use crate::inventory_item_service::InventoryItem;
 use crate::inventory_service::Inventory;
-use crate::user_service::User;
 use async_graphql::Object;
 
 pub struct Query {
@@ -19,5 +19,16 @@ impl Query {
 
     pub async fn get_inventory_by_owner(&self, id: String) -> Option<Inventory> {
         self.db.get_inventory_by_owner_uuid(id).await
+    }
+
+    pub async fn get_inventory_items(
+        &self,
+        inventory_id: String,
+        page: u32,
+        page_size: u32,
+    ) -> Option<Vec<InventoryItem>> {
+        self.db
+            .get_inventory_items(inventory_id, page, page_size)
+            .await
     }
 }
