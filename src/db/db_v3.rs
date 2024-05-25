@@ -60,13 +60,16 @@ impl DB {
         let skip = (page - 1) * page_size;
         let query = "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item)
                         OPTIONAL MATCH (item)-[:HAS_BASE]->(base:ItemBase)
+                        OPTIONAL MATCH (item)-[:HAS_TRAIT]->(trait:Trait)
+                        OPTIONAL MATCH (base)-[:HAS_TRAIT]->(baseTrait:Trait)
+                        WITH item, base, c, COLLECT(trait.name) as item_traits, COLLECT(baseTrait.name) as base_traits
                         RETURN
                         item.uuid as uuid,
                         c.quantity as quantity,
                         COALESCE(item.effect, 'No effect') as effect,
                         COALESCE(item.level, 0) as level,
                         item.value as value,
-                        [] as traits,
+                        (item_traits + base_traits) as traits,
                         toFloat(COALESCE(item.bulk, base.bulk)) as bulk,
                         COALESCE(base.name +' ('+item.name+')', item.name) as name,
                         COALESCE(item.description, base.description, 'No description') as description,
