@@ -62,7 +62,9 @@ impl DB {
                         OPTIONAL MATCH (item)-[:HAS_BASE]->(base:ItemBase)
                         OPTIONAL MATCH (item)-[:HAS_TRAIT]->(trait:Trait)
                         OPTIONAL MATCH (base)-[:HAS_TRAIT]->(baseTrait:Trait)
-                        WITH item, base, c, COLLECT(trait.name) as item_traits, COLLECT(baseTrait.name) as base_traits
+                        WITH item, base, c, COLLECT(trait.name) as item_traits, COLLECT(baseTrait.name) as base_traits,
+                        COALESCE(base.name +' ('+item.name+')', item.name) as combined_name
+                        WHERE combined_name CONTAINS 'Potion' OR ANY(s IN base_traits WHERE s = 'Toolkit')
                         RETURN
                         item.uuid as uuid,
                         c.quantity as quantity,
@@ -71,7 +73,7 @@ impl DB {
                         item.value as value,
                         (item_traits + base_traits) as traits,
                         toFloat(COALESCE(item.bulk, base.bulk)) as bulk,
-                        COALESCE(base.name +' ('+item.name+')', item.name) as name,
+                        combined_name as name,
                         COALESCE(item.description, base.description, 'No description') as description,
                         COALESCE(item.activation_cost, base.activation_cost, 'Not activatible') as activation_cost,
                         COALESCE(item.usage_requirements, base.usage_requirements) as usage_requirements
