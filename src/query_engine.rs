@@ -27,9 +27,11 @@ impl Query {
         inventory_id: String,
         page: u32,
         page_size: u32,
+        order_by: String,
+        order_direction: String,
     ) -> Option<PaginatedResponse<InventoryItem>> {
         self.db
-            .get_inventory_items(inventory_id, page, page_size)
+            .get_inventory_items(inventory_id, page, page_size, order_by, order_direction)
             .await
     }
 }

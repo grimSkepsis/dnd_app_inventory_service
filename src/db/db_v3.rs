@@ -40,16 +40,25 @@ impl DB {
         }
         None
     }
-
+    fn map_sort_field(field: &str) -> &str {
+        match field {
+            "name" => "name",
+            "value" => "value",
+            "level" => "level",
+            "quantity" => "quantity",
+            _ => "name", // Default field if input does not match
+        }
+    }
     pub async fn get_inventory_items(
         &self,
         inventory_uuid: String,
         page: u32,
         page_size: u32,
+        order_by: String,
+        order_direction: String,
     ) -> Option<PaginatedResponse<InventoryItem>> {
         let skip = (page - 1) * page_size;
-        let query =
-            "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item)
+        let query = "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item)
                         OPTIONAL MATCH (item)-[:HAS_BASE]->(base:ItemBase)
                         RETURN
                         item.uuid as uuid,
@@ -63,11 +72,15 @@ impl DB {
                         COALESCE(item.description, base.description, 'No description') as description,
                         COALESCE(item.activation_cost, base.activation_cost, 'Not activatible') as activation_cost,
                         COALESCE(item.usage_requirements, base.usage_requirements) as usage_requirements
-                        SKIP $skip LIMIT $limit";
+                        ORDER BY $$ <>
+                        SKIP $skip LIMIT $limit"
+                        .replace("$$", Self::map_sort_field(&order_by))
+                        .replace("<>", if order_direction == "ASC" { "ASC" } else { "DESC" });
+        print!("{}", query.clone());
         let count_query =
             "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item) RETURN count(item) as total";
-        let parameters = neo4rs::query(query)
-            .params([("uuid", inventory_uuid.clone())])
+        let parameters = neo4rs::query(&query)
+            .params([("uuid", inventory_uuid.clone()), ("order_by", order_by)])
             .params([("skip", skip), ("limit", page_size)]);
 
         let mut result = self.graph.execute(parameters).await.unwrap();
