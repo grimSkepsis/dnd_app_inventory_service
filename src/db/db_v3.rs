@@ -63,7 +63,6 @@ impl DB {
             &"
                         MATCH(inv:Inventory{uuid: $uuid})
                         Match(inv)-[c:CONTAINS]->(item:Item)
-                        MATCH (item)-[:HAS_TRAIT]->(Trait {name: 'Potion'})
                         <FILTER>
                         OPTIONAL MATCH (item)-[:HAS_TRAIT]->(trait:Trait)
                         WITH item,  c, COLLECT(trait.name) as item_traits
