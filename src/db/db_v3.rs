@@ -59,29 +59,39 @@ impl DB {
         filter: InventoryItemQueryFilter,
     ) -> Option<PaginatedResponse<InventoryItem>> {
         let skip = (page - 1) * page_size;
-        let (query, params) = filter.to_cypher_query(&"MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item)
-                        OPTIONAL MATCH (item)-[:HAS_BASE]->(base:ItemBase)
-                        OPTIONAL MATCH (item)-[:HAS_TRAIT]->(trait:Trait)
-                        OPTIONAL MATCH (base)-[:HAS_TRAIT]->(baseTrait:Trait)
-                        WITH item, base, c, COLLECT(trait.name) as item_traits, COLLECT(baseTrait.name) as base_traits,
-                        COALESCE(base.name +' ('+item.name+')', item.name) as combined_name
+        let (query, params) = filter.to_cypher_query(
+            &"
+                        MATCH(inv:Inventory{uuid: $uuid})
+                        Match(inv)-[c:CONTAINS]->(item:Item)
+                        MATCH (item)-[:HAS_TRAIT]->(Trait {name: 'Potion'})
                         <FILTER>
+                        OPTIONAL MATCH (item)-[:HAS_TRAIT]->(trait:Trait)
+                        WITH item,  c, COLLECT(trait.name) as item_traits
+
                         RETURN
                         item.uuid as uuid,
                         c.quantity as quantity,
                         COALESCE(item.effect, 'No effect') as effect,
                         COALESCE(item.level, 0) as level,
                         item.value as value,
-                        (item_traits + base_traits) as traits,
-                        toFloat(COALESCE(item.bulk, base.bulk)) as bulk,
-                        combined_name as name,
-                        COALESCE(item.description, base.description, 'No description') as description,
-                        COALESCE(item.activation_cost, base.activation_cost, 'Not activatible') as activation_cost,
-                        COALESCE(item.usage_requirements, base.usage_requirements) as usage_requirements
+                        item_traits as traits,
+                        toFloat(COALESCE(item.bulk, 0)) as bulk,
+                        item.name as name,
+                        COALESCE(item.description,  'No description') as description,
+                        COALESCE(item.activation_cost,'Not activatible') as activation_cost,
+                        COALESCE(item.usage_requirements, 'Not usable') as usage_requirements
                         ORDER BY $$ <>
                         SKIP $skip LIMIT $limit"
-                        .replace("$$", Self::map_sort_field(&order_by))
-                        .replace("<>", if order_direction == "ASC" { "ASC" } else { "DESC" }));
+                .replace("$$", Self::map_sort_field(&order_by))
+                .replace(
+                    "<>",
+                    if order_direction == "ASC" {
+                        "ASC"
+                    } else {
+                        "DESC"
+                    },
+                ),
+        );
         print!("{}", query.clone());
         let count_query =
             "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item) RETURN count(item) as total";

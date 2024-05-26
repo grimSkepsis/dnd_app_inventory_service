@@ -47,8 +47,8 @@ impl Inventory {
 #[derive(Debug, Clone, InputObject)]
 pub struct InventoryItemQueryFilter {
     pub search_value: Option<String>,
-    pub include_traits: Option<Vec<String>>,
-    pub exclude_traits: Option<Vec<String>>,
+    pub included_traits: Option<Vec<String>>,
+    pub excluded_traits: Option<Vec<String>>,
 }
 
 impl InventoryItemQueryFilter {
@@ -58,18 +58,28 @@ impl InventoryItemQueryFilter {
         let mut params = HashMap::new();
 
         if let Some(ref search_value) = self.search_value {
-            query_conditions.push("toLower(combined_name) CONTAINS toLower($search_value)");
+            query_conditions.push("toLower(item.name) CONTAINS toLower($search_value)");
             params.insert("search_value".to_string(), search_value.clone());
         }
 
-        if let Some(ref include_traits) = self.include_traits {
-            query_conditions.push("ANY(tag IN n.tags WHERE tag IN $include_traits)");
-            params.insert("include_tags".to_string(), include_traits.join(","));
+        if let Some(ref included_traits) = self.included_traits {
+            // query_conditions.push(
+            //     &"ANY(trait IN base_traits WHERE trait IN [<TRAIT_PARAMS>])".replace(
+            //         "<TRAIT_PARAMS>",
+            //         &included_traits
+            //             .iter()
+            //             .enumerate()
+            //             .map(|(idx, _)| "$it{}".replace("{}", &idx.to_string()))
+            //             .join(","),
+            //     ),
+            // );
+
+            params.insert("included_traits".to_string(), included_traits.join(","));
         }
 
-        if let Some(ref exclude_traits) = self.exclude_traits {
-            query_conditions.push("NONE(tag IN n.tags WHERE tag IN $exclude_traits)");
-            params.insert("exclude_tags".to_string(), exclude_traits.join(","));
+        if let Some(ref excluded_traits) = self.excluded_traits {
+            query_conditions.push("NONE(trait IN base_traits WHERE trait IN [$excluded_traits])");
+            params.insert("excluded_traits".to_string(), excluded_traits.join(", "));
         }
 
         let full_query = if query_conditions.is_empty() {
