@@ -46,6 +46,7 @@ impl DB {
             "value" => "value",
             "level" => "level",
             "quantity" => "quantity",
+            "bulk" => "bulk",
             _ => "name", // Default field if input does not match
         }
     }
@@ -79,11 +80,11 @@ impl DB {
                         COALESCE(item.description,  'No description') as description,
                         COALESCE(item.activation_cost,'Not activatible') as activation_cost,
                         COALESCE(item.usage_requirements, 'Not usable') as usage_requirements
-                        ORDER BY $$ <>
+                        ORDER BY <ORDER_FIELD> <ORDER_DIR>
                         SKIP $skip LIMIT $limit"
-                .replace("$$", Self::map_sort_field(&order_by))
+                .replace("<ORDER_FIELD>", Self::map_sort_field(&order_by))
                 .replace(
-                    "<>",
+                    "<ORDER_DIR>",
                     if order_direction == "ASC" {
                         "ASC"
                     } else {
