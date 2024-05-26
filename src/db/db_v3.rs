@@ -1,6 +1,6 @@
-use crate::inventory_item_service::InventoryItem;
 use crate::inventory_service::Inventory;
 use crate::pagination_service::PaginatedResponse;
+use crate::{inventory_item_service::InventoryItem, inventory_service::InventoryItemQueryFilter};
 use neo4rs::{BoltNode, Graph, Row};
 
 pub struct DB {
@@ -56,15 +56,16 @@ impl DB {
         page_size: u32,
         order_by: String,
         order_direction: String,
+        filter: InventoryItemQueryFilter,
     ) -> Option<PaginatedResponse<InventoryItem>> {
         let skip = (page - 1) * page_size;
-        let query = "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item)
+        let (query, params) = filter.to_cypher_query(&"MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item)
                         OPTIONAL MATCH (item)-[:HAS_BASE]->(base:ItemBase)
                         OPTIONAL MATCH (item)-[:HAS_TRAIT]->(trait:Trait)
                         OPTIONAL MATCH (base)-[:HAS_TRAIT]->(baseTrait:Trait)
                         WITH item, base, c, COLLECT(trait.name) as item_traits, COLLECT(baseTrait.name) as base_traits,
                         COALESCE(base.name +' ('+item.name+')', item.name) as combined_name
-                        WHERE combined_name CONTAINS 'Potion' OR ANY(s IN base_traits WHERE s = 'Toolkit')
+                        <FILTER>
                         RETURN
                         item.uuid as uuid,
                         c.quantity as quantity,
@@ -80,11 +81,12 @@ impl DB {
                         ORDER BY $$ <>
                         SKIP $skip LIMIT $limit"
                         .replace("$$", Self::map_sort_field(&order_by))
-                        .replace("<>", if order_direction == "ASC" { "ASC" } else { "DESC" });
+                        .replace("<>", if order_direction == "ASC" { "ASC" } else { "DESC" }));
         print!("{}", query.clone());
         let count_query =
             "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item) RETURN count(item) as total";
         let parameters = neo4rs::query(&query)
+            .params(params)
             .params([("uuid", inventory_uuid.clone()), ("order_by", order_by)])
             .params([("skip", skip), ("limit", page_size)]);
 

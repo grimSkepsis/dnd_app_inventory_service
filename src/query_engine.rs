@@ -1,6 +1,6 @@
 use crate::db::DB;
 use crate::inventory_item_service::InventoryItem;
-use crate::inventory_service::Inventory;
+use crate::inventory_service::{Inventory, InventoryItemQueryFilter};
 use crate::pagination_service::PaginatedResponse;
 use async_graphql::Object;
 
@@ -29,9 +29,17 @@ impl Query {
         page_size: u32,
         order_by: String,
         order_direction: String,
+        filter: InventoryItemQueryFilter,
     ) -> Option<PaginatedResponse<InventoryItem>> {
         self.db
-            .get_inventory_items(inventory_id, page, page_size, order_by, order_direction)
+            .get_inventory_items(
+                inventory_id,
+                page,
+                page_size,
+                order_by,
+                order_direction,
+                filter,
+            )
             .await
     }
 }
