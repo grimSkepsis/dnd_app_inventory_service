@@ -93,17 +93,27 @@ impl DB {
                 ),
         );
         print!("{}", query.clone());
-        let count_query =
-            "MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item) RETURN count(item) as total";
-        let parameters = neo4rs::query(&query)
-            .params(params)
-            .params([("uuid", inventory_uuid.clone()), ("order_by", order_by)])
-            .params([("skip", skip), ("limit", page_size)]);
 
-        let mut result = self.graph.execute(parameters).await.unwrap();
+        let (count_query, count_params) = filter.to_cypher_query("MATCH(inv:Inventory{uuid: $uuid}) Match(inv)-[c:CONTAINS]->(item:Item) <FILTER> RETURN count(item) as total");
+
+        let mut result = self
+            .graph
+            .execute(
+                neo4rs::query(&query)
+                    .params(params)
+                    .params([("uuid", inventory_uuid.clone()), ("order_by", order_by)])
+                    .params([("skip", skip), ("limit", page_size)]),
+            )
+            .await
+            .unwrap();
+
         let mut count_result = self
             .graph
-            .execute(neo4rs::query(count_query).param("uuid", inventory_uuid))
+            .execute(
+                neo4rs::query(&count_query)
+                    .params(count_params)
+                    .param("uuid", inventory_uuid),
+            )
             .await
             .unwrap();
         let mut items = Vec::new();
