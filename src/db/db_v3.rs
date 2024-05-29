@@ -1,6 +1,9 @@
 use crate::inventory_service::Inventory;
 use crate::pagination_service::PaginatedResponse;
-use crate::{inventory_item_service::InventoryItem, inventory_service::InventoryItemQueryFilter};
+use crate::{
+    inventory_item_service::InventoryItem, inventory_service::InventoryItemQueryFilter,
+    inventory_with_items_service::InventoryWithItems,
+};
 use neo4rs::{BoltNode, Graph, Row};
 
 pub struct DB {
@@ -29,6 +32,45 @@ impl DB {
             return self.parse_inventory(row);
         }
         None
+    }
+
+    pub async fn get_inventory_by_owner_name(&self, name: String) -> Option<Inventory> {
+        let query = "MATCH(onwer)-[:OWNS]->(inv:Inventory) WHERE toLower(onwer.name) CONTAINS toLower($name) return (inv)";
+        let parameters = neo4rs::query(query).param("name", name);
+        let mut result = self.graph.execute(parameters).await.unwrap();
+        if let Ok(Some(row)) = result.next().await {
+            return self.parse_inventory(row);
+        }
+        None
+    }
+
+    pub async fn get_inventory_with_items_by_owner_name(
+        &self,
+        name_term: String,
+        page: u32,
+        page_size: u32,
+        order_by: String,
+        order_direction: String,
+        filter: InventoryItemQueryFilter,
+    ) -> (Option<InventoryWithItems>) {
+        let inventory = self.get_inventory_by_owner_name(name_term).await;
+        if inventory.is_none() {
+            return None;
+        }
+        let items = self
+            .get_inventory_items(
+                inventory.as_ref().unwrap().uuid.clone().to_string(),
+                page,
+                page_size,
+                order_by,
+                order_direction,
+                filter,
+            )
+            .await;
+        return Some(InventoryWithItems {
+            inventory: inventory.unwrap(),
+            items: items.unwrap(),
+        });
     }
 
     pub async fn get_inventory_by_uuid(&self, uuid: String) -> Option<Inventory> {
