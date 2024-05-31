@@ -1,8 +1,8 @@
-use crate::inventory_service::Inventory;
-use crate::pagination_service::PaginatedResponse;
-use crate::{
-    inventory_item_service::InventoryItem, inventory_service::InventoryItemQueryFilter,
-    inventory_with_items_service::InventoryWithItems,
+use crate::graphql::schemas::{
+    inventory_item_schema::{InventoryItem, InventoryItemQueryFilter},
+    inventory_schema::Inventory,
+    inventory_with_items_schema::InventoryWithItems,
+    paginated_response_schema::PaginatedResponse,
 };
 use neo4rs::{BoltNode, Graph, Row};
 
@@ -52,7 +52,7 @@ impl DB {
         order_by: String,
         order_direction: String,
         filter: InventoryItemQueryFilter,
-    ) -> (Option<InventoryWithItems>) {
+    ) -> Option<InventoryWithItems> {
         let inventory = self.get_inventory_by_owner_name(name_term).await;
         if inventory.is_none() {
             return None;

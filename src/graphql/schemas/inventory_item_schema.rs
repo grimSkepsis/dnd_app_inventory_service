@@ -3,19 +3,23 @@ use async_graphql::{InputObject, Object};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
-pub struct Inventory {
+pub struct InventoryItem {
     pub uuid: ID,
     pub name: String,
-    pub capacity: u16,
-    pub cp: u32,
-    pub sp: u32,
-    pub gp: u32,
-    pub pp: u32,
+    pub level: u16,
+    pub traits: Vec<String>,
+    pub activation_cost: String,
+    pub bulk: f32,
+    pub description: String,
+    pub usage_requirements: String,
+    pub value: u64,
+    pub effect: String,
+    pub quantity: u32,
 }
 
 #[Object]
-impl Inventory {
-    async fn uuid(&self) -> &str {
+impl InventoryItem {
+    async fn uuid(&self) -> &ID {
         &self.uuid
     }
 
@@ -23,24 +27,40 @@ impl Inventory {
         &self.name
     }
 
-    async fn capacity(&self) -> u16 {
-        self.capacity
+    async fn level(&self) -> u16 {
+        self.level
     }
 
-    async fn cp(&self) -> u32 {
-        self.cp
+    async fn quantity(&self) -> u32 {
+        self.quantity
     }
 
-    async fn sp(&self) -> u32 {
-        self.sp
+    async fn traits(&self) -> &Vec<String> {
+        &self.traits
     }
 
-    async fn gp(&self) -> u32 {
-        self.gp
+    async fn activation_cost(&self) -> &str {
+        &self.activation_cost
     }
 
-    async fn pp(&self) -> u32 {
-        self.pp
+    async fn bulk(&self) -> f32 {
+        self.bulk
+    }
+
+    async fn description(&self) -> &str {
+        &self.description
+    }
+
+    async fn usage_requirements(&self) -> &str {
+        &self.usage_requirements
+    }
+
+    async fn value(&self) -> u64 {
+        self.value
+    }
+
+    async fn effect(&self) -> &str {
+        &self.effect
     }
 }
 

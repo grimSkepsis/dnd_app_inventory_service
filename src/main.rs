@@ -8,6 +8,7 @@ use axum::Router;
 use dotenv::dotenv;
 use neo4rs::Graph;
 use std::env;
+use std::sync::Arc;
 use tracing::instrument;
 use tracing_appender::rolling::daily;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -16,19 +17,15 @@ use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
 use crate::db::DB;
-use crate::query_engine::Query;
+use crate::graphql::resolvers::root_resolver::QueryRoot;
 
 mod db;
-mod inventory_item_service;
-mod inventory_service;
-mod inventory_with_items_service;
-mod pagination_service;
-mod query_engine;
+mod graphql;
 mod user_service;
 
 #[instrument(skip(schema, graph_glrequest))]
 async fn graphql_handler(
-    schema: Schema<Query, EmptyMutation, EmptySubscription>,
+    schema: Schema<QueryRoot, EmptyMutation, EmptySubscription>,
     graph_glrequest: GraphQLRequest,
 ) -> GraphQLResponse {
     let inner_request = graph_glrequest.into_inner();
@@ -66,8 +63,9 @@ async fn main() {
     };
 
     let graph = create_db_connection_pool().await;
-    let query = Query { db: DB::new(graph) };
-    let schema = Schema::new(query, EmptyMutation, EmptySubscription);
+    let db = Arc::new(DB::new(graph));
+
+    let schema = Schema::build(QueryRoot::new(db), EmptyMutation, EmptySubscription).finish();
 
     tracing_subscriber::registry()
         .with(env_filter)

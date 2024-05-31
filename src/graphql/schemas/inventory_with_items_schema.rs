@@ -1,8 +1,8 @@
 use async_graphql::SimpleObject;
 
-use crate::{
-    inventory_item_service::InventoryItem, inventory_service::Inventory,
-    pagination_service::PaginatedResponse,
+use crate::graphql::schemas::{
+    inventory_item_schema::InventoryItem, inventory_schema::Inventory,
+    paginated_response_schema::PaginatedResponse,
 };
 #[derive(SimpleObject)]
 pub struct InventoryWithItems {
