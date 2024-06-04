@@ -18,7 +18,9 @@ use tracing_subscriber::EnvFilter;
 
 use crate::db::DB;
 use crate::graphql::resolvers::root_resolver::QueryRoot;
-use crate::models::inventory_model::InventoryModelManager;
+use crate::models::{
+    inventory_item_model::InventoryItemModelManager, inventory_model::InventoryModelManager,
+};
 
 mod db;
 mod graphql;
@@ -67,7 +69,11 @@ async fn main() {
     let db = Arc::new(DB::new(graph.clone()));
 
     let schema = Schema::build(
-        QueryRoot::new(db, InventoryModelManager::new(graph)),
+        QueryRoot::new(
+            db,
+            InventoryModelManager::new(graph.clone()),
+            InventoryItemModelManager::new(graph),
+        ),
         EmptyMutation,
         EmptySubscription,
     )

@@ -1,19 +1,20 @@
 use crate::{
-    db::DB,
     graphql::schemas::{
         inventory_item_schema::{InventoryItem, InventoryItemQueryFilter},
         paginated_response_schema::PaginatedResponse,
     },
+    models::inventory_item_model::InventoryItemModelManager,
 };
 use async_graphql::Object;
-use std::sync::Arc;
 
 pub struct InventoryItemQuery {
-    db: Arc<DB>,
+    inventory_item_model_manager: InventoryItemModelManager,
 }
 impl InventoryItemQuery {
-    pub fn new(db: Arc<DB>) -> Self {
-        Self { db }
+    pub fn new(inventory_item_model_manager: InventoryItemModelManager) -> Self {
+        Self {
+            inventory_item_model_manager,
+        }
     }
 }
 
@@ -28,7 +29,7 @@ impl InventoryItemQuery {
         order_direction: String,
         filter: InventoryItemQueryFilter,
     ) -> Option<PaginatedResponse<InventoryItem>> {
-        self.db
+        self.inventory_item_model_manager
             .get_inventory_items(
                 inventory_id,
                 page,
