@@ -1,15 +1,16 @@
-use crate::db::DB;
 use crate::graphql::schemas::inventory_item_schema::InventoryItemQueryFilter;
 use crate::graphql::schemas::inventory_with_items_schema::InventoryWithItems;
+use crate::models::inventory_with_items_model::InventoryWithItemsModelManager;
 use async_graphql::Object;
-use std::sync::Arc;
 
 pub struct InventoryWithItemsQuery {
-    pub db: Arc<DB>,
+    inventory_with_items_model_manager: InventoryWithItemsModelManager,
 }
 impl InventoryWithItemsQuery {
-    pub fn new(db: Arc<DB>) -> Self {
-        Self { db }
+    pub fn new(inventory_with_items_model_manager: InventoryWithItemsModelManager) -> Self {
+        Self {
+            inventory_with_items_model_manager,
+        }
     }
 }
 
@@ -24,7 +25,7 @@ impl InventoryWithItemsQuery {
         order_direction: String,
         filter: InventoryItemQueryFilter,
     ) -> Option<InventoryWithItems> {
-        self.db
+        self.inventory_with_items_model_manager
             .get_inventory_with_items_by_owner_name(
                 name_term,
                 page,

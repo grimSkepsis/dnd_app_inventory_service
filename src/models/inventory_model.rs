@@ -1,11 +1,6 @@
 use std::sync::Arc;
 
-use crate::graphql::schemas::{
-    inventory_item_schema::{InventoryItem, InventoryItemQueryFilter},
-    inventory_schema::Inventory,
-    inventory_with_items_schema::InventoryWithItems,
-    paginated_response_schema::PaginatedResponse,
-};
+use crate::graphql::schemas::inventory_schema::Inventory;
 use neo4rs::{BoltNode, Graph, Row};
 
 pub struct InventoryModelManager {

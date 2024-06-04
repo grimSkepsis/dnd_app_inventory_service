@@ -16,13 +16,12 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
-use crate::db::DB;
 use crate::graphql::resolvers::root_resolver::QueryRoot;
 use crate::models::{
     inventory_item_model::InventoryItemModelManager, inventory_model::InventoryModelManager,
+    inventory_with_items_model::InventoryWithItemsModelManager,
 };
 
-mod db;
 mod graphql;
 mod models;
 
@@ -66,13 +65,15 @@ async fn main() {
     };
 
     let graph = Arc::new(create_db_connection_pool().await);
-    let db = Arc::new(DB::new(graph.clone()));
 
     let schema = Schema::build(
         QueryRoot::new(
-            db,
             InventoryModelManager::new(graph.clone()),
-            InventoryItemModelManager::new(graph),
+            InventoryItemModelManager::new(graph.clone()),
+            InventoryWithItemsModelManager::new(
+                InventoryItemModelManager::new(graph.clone()),
+                InventoryModelManager::new(graph),
+            ),
         ),
         EmptyMutation,
         EmptySubscription,

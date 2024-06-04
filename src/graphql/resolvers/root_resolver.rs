@@ -1,12 +1,11 @@
-use crate::db::DB;
 use crate::graphql::resolvers::{
     inventory_item_resolver::InventoryItemQuery, inventory_resolver::InventoryQuery,
     inventory_with_items_resolver::InventoryWithItemsQuery,
 };
 use crate::models::inventory_item_model::InventoryItemModelManager;
 use crate::models::inventory_model::InventoryModelManager;
+use crate::models::inventory_with_items_model::InventoryWithItemsModelManager;
 use async_graphql::Object;
-use std::sync::Arc;
 
 pub struct QueryRoot {
     inventory: InventoryQuery,
@@ -16,14 +15,14 @@ pub struct QueryRoot {
 
 impl QueryRoot {
     pub fn new(
-        db: Arc<DB>,
         inventory_model_manager: InventoryModelManager,
         inventory_item_model_manager: InventoryItemModelManager,
+        inventory_with_items_model_manager: InventoryWithItemsModelManager,
     ) -> Self {
         Self {
             inventory: InventoryQuery::new(inventory_model_manager),
             inventory_items: InventoryItemQuery::new(inventory_item_model_manager),
-            inventory_with_items: InventoryWithItemsQuery::new(db.clone()),
+            inventory_with_items: InventoryWithItemsQuery::new(inventory_with_items_model_manager),
         }
     }
 }

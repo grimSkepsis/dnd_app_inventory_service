@@ -1,7 +1,6 @@
+use crate::graphql::schemas::inventory_schema::Inventory;
 use crate::models::inventory_model::InventoryModelManager;
-use crate::{db::DB, graphql::schemas::inventory_schema::Inventory};
 use async_graphql::Object;
-use std::sync::Arc;
 
 pub struct InventoryQuery {
     inventory_model_manager: InventoryModelManager,
