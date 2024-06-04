@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::graphql::schemas::{
     inventory_item_schema::{InventoryItem, InventoryItemQueryFilter},
     inventory_schema::Inventory,
@@ -7,11 +9,11 @@ use crate::graphql::schemas::{
 use neo4rs::{BoltNode, Graph, Row};
 
 pub struct DB {
-    graph: Graph,
+    graph: Arc<Graph>,
 }
 
 impl DB {
-    pub fn new(graph: Graph) -> Self {
+    pub fn new(graph: Arc<Graph>) -> Self {
         Self { graph }
     }
     pub async fn get_inventory_by_character_uuid(&self, uuid: String) -> Option<Inventory> {

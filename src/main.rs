@@ -18,10 +18,11 @@ use tracing_subscriber::EnvFilter;
 
 use crate::db::DB;
 use crate::graphql::resolvers::root_resolver::QueryRoot;
+use crate::models::inventory_model::InventoryModelManager;
 
 mod db;
 mod graphql;
-mod user_service;
+mod models;
 
 #[instrument(skip(schema, graph_glrequest))]
 async fn graphql_handler(
@@ -62,10 +63,15 @@ async fn main() {
         graph
     };
 
-    let graph = create_db_connection_pool().await;
-    let db = Arc::new(DB::new(graph));
+    let graph = Arc::new(create_db_connection_pool().await);
+    let db = Arc::new(DB::new(graph.clone()));
 
-    let schema = Schema::build(QueryRoot::new(db), EmptyMutation, EmptySubscription).finish();
+    let schema = Schema::build(
+        QueryRoot::new(db, InventoryModelManager::new(graph)),
+        EmptyMutation,
+        EmptySubscription,
+    )
+    .finish();
 
     tracing_subscriber::registry()
         .with(env_filter)
