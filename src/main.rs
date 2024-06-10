@@ -22,6 +22,7 @@ use crate::models::{
     inventory_with_items_model::InventoryWithItemsModelManager,
 };
 
+use tower_http::cors::{Any, CorsLayer};
 mod graphql;
 mod models;
 
@@ -39,6 +40,10 @@ async fn graphql_handler(
 #[tokio::main]
 async fn main() {
     // Load .env file
+    let cors = CorsLayer::new()
+        .allow_origin(Any) // Allow any origin
+        .allow_methods(Any) // Allow any method
+        .allow_headers(Any);
     dotenv().ok();
     println!("RUST_LOG: {:?}", env::var("RUST_LOG"));
     let file_appender = daily("logs", "app.log");
@@ -85,10 +90,12 @@ async fn main() {
         .with(formatting_layer)
         .try_init()
         .expect("Failed to initialize logging");
-    let app = Router::new().route(
-        "/graphql",
-        post(|req: GraphQLRequest| graphql_handler(schema, req)),
-    );
+    let app = Router::new()
+        .route(
+            "/graphql",
+            post(|req: GraphQLRequest| graphql_handler(schema, req)),
+        )
+        .layer(cors);
 
     let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0:3000".to_string());
     let listener = tokio::net::TcpListener::bind(&host).await.unwrap();

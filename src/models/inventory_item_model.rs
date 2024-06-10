@@ -45,7 +45,7 @@ impl InventoryItemModelManager {
                         COALESCE(item.description,  'No description') as description,
                         COALESCE(item.activation_cost,'Not activatible') as activation_cost,
                         COALESCE(item.usage_requirements, 'Not usable') as usage_requirements
-                        ORDER BY <ORDER_FIELD> <ORDER_DIR>
+                        ORDER BY <ORDER_FIELD> <ORDER_DIR>, uuid DESC
                         SKIP $skip LIMIT $limit"
                 .replace("<ORDER_FIELD>", Self::map_sort_field(&order_by))
                 .replace(
