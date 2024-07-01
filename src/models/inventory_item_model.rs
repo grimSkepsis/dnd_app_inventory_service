@@ -18,13 +18,13 @@ impl InventoryItemModelManager {
     pub async fn get_inventory_items(
         &self,
         inventory_uuid: String,
-        page: u32,
+        page_index: u32,
         page_size: u32,
         order_by: String,
         order_direction: String,
         filter: InventoryItemQueryFilter,
     ) -> Option<PaginatedResponse<InventoryItem>> {
-        let skip = (page - 1) * page_size;
+        let skip = page_index * page_size;
         let (query, params) = filter.to_cypher_query(
             &"
                         MATCH(inv:Inventory{uuid: $uuid})
@@ -90,7 +90,7 @@ impl InventoryItemModelManager {
             let total_pages = (total_entities as f32 / page_size as f32).ceil() as u32;
             return Some(PaginatedResponse {
                 entities: items,
-                page,
+                page_index,
                 page_size,
                 total_entities,
                 total_pages,

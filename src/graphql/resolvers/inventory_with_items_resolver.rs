@@ -19,7 +19,7 @@ impl InventoryWithItemsQuery {
     pub async fn get_inventory_with_items_by_owner_name(
         &self,
         name_term: String,
-        page: u32,
+        page_index: u32,
         page_size: u32,
         order_by: String,
         order_direction: String,
@@ -28,7 +28,7 @@ impl InventoryWithItemsQuery {
         self.inventory_with_items_model_manager
             .get_inventory_with_items_by_owner_name(
                 name_term,
-                page,
+                page_index,
                 page_size,
                 order_by,
                 order_direction,
