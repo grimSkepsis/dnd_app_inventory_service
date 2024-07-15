@@ -23,7 +23,7 @@ impl InventoryItemQuery {
     pub async fn get_inventory_items(
         &self,
         inventory_id: String,
-        page: u32,
+        page_index: u32,
         page_size: u32,
         order_by: String,
         order_direction: String,
@@ -32,7 +32,7 @@ impl InventoryItemQuery {
         self.inventory_item_model_manager
             .get_inventory_items(
                 inventory_id,
-                page,
+                page_index,
                 page_size,
                 order_by,
                 order_direction,
