@@ -10,9 +10,11 @@ pub struct InventoryItem {
     pub traits: Vec<String>,
     pub activation_cost: String,
     pub bulk: f32,
+    pub display_bulk: String,
     pub description: String,
     pub usage_requirements: String,
     pub value: u64,
+    pub display_value: String,
     pub effect: String,
     pub quantity: u32,
 }
@@ -47,6 +49,10 @@ impl InventoryItem {
         self.bulk
     }
 
+    async fn display_bulk(&self) -> &str {
+        &self.display_bulk
+    }
+
     async fn description(&self) -> &str {
         &self.description
     }
@@ -57,6 +63,10 @@ impl InventoryItem {
 
     async fn value(&self) -> u64 {
         self.value
+    }
+
+    async fn display_value(&self) -> &str {
+        &self.display_value
     }
 
     async fn effect(&self) -> &str {

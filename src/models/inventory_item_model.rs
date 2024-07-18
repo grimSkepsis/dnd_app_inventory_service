@@ -107,6 +107,7 @@ impl InventoryItemModelManager {
             name: node_properties.get("name").unwrap(),
             value: node_properties.get("value").unwrap(),
             bulk: node_properties.get("bulk").unwrap(),
+            display_bulk: Self::calc_display_bulk(node_properties.get("bulk").unwrap()),
             quantity: node_properties.get("quantity").unwrap(),
             description: node_properties.get("description").unwrap(),
             effect: node_properties.get("effect").unwrap(),
@@ -114,7 +115,21 @@ impl InventoryItemModelManager {
             traits: node_properties.get("traits").unwrap(),
             activation_cost: node_properties.get("activation_cost").unwrap(),
             usage_requirements: node_properties.get("usage_requirements").unwrap(),
+            display_value: Self::calc_display_value(node_properties.get("value").unwrap()),
         })
+    }
+
+    fn calc_display_value(value: u64) -> String {
+        let gp_value = value as f32 / 1000.0;
+        return format!("{} gp", gp_value.to_string());
+    }
+
+    fn calc_display_bulk(bulk_value: f32) -> String {
+        match bulk_value {
+            0.0 => return "Negligible".to_string(),
+            0.1 => return "Light".to_string(),
+            _ => return format!("{} bulk", bulk_value.to_string()),
+        }
     }
 
     fn map_sort_field(field: &str) -> &str {
