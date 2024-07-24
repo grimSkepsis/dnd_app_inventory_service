@@ -1,6 +1,5 @@
 use crate::graphql::schemas::{
-    inventory_item_schema::InventoryItemQueryFilter,
-    inventory_with_items_schema::InventoryWithItems,
+    inventory_with_items_schema::InventoryWithItems, item_schema::ItemQueryFilter,
 };
 
 use super::{
@@ -30,7 +29,7 @@ impl InventoryWithItemsModelManager {
         page_size: u32,
         order_by: String,
         order_direction: String,
-        filter: InventoryItemQueryFilter,
+        filter: ItemQueryFilter,
     ) -> Option<InventoryWithItems> {
         let inventory = self
             .inventory_model_manager

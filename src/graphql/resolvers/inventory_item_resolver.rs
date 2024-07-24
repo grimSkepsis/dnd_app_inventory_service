@@ -1,8 +1,6 @@
-use std::borrow::Cow;
-
 use crate::{
     graphql::schemas::{
-        inventory_item_schema::{InventoryItem, InventoryItemQueryFilter},
+        inventory_item_schema::InventoryItem, item_schema::ItemQueryFilter,
         paginated_response_schema::PaginatedResponse,
     },
     models::inventory_item_model::InventoryItemModelManager,
@@ -29,7 +27,7 @@ impl InventoryItemQuery {
         page_size: u32,
         order_by: String,
         order_direction: String,
-        filter: InventoryItemQueryFilter,
+        filter: ItemQueryFilter,
     ) -> Option<PaginatedResponse<InventoryItem>> {
         self.inventory_item_model_manager
             .get_inventory_items(

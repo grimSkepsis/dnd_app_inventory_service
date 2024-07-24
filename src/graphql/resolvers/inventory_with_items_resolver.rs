@@ -1,5 +1,5 @@
-use crate::graphql::schemas::inventory_item_schema::InventoryItemQueryFilter;
 use crate::graphql::schemas::inventory_with_items_schema::InventoryWithItems;
+use crate::graphql::schemas::item_schema::ItemQueryFilter;
 use crate::models::inventory_with_items_model::InventoryWithItemsModelManager;
 use async_graphql::Object;
 
@@ -23,7 +23,7 @@ impl InventoryWithItemsQuery {
         page_size: u32,
         order_by: String,
         order_direction: String,
-        filter: InventoryItemQueryFilter,
+        filter: ItemQueryFilter,
     ) -> Option<InventoryWithItems> {
         self.inventory_with_items_model_manager
             .get_inventory_with_items_by_owner_name(

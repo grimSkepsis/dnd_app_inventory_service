@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::graphql::schemas::{
-    inventory_item_schema::{InventoryItem, InventoryItemQueryFilter},
+    inventory_item_schema::InventoryItem, item_schema::ItemQueryFilter,
     paginated_response_schema::PaginatedResponse,
 };
 use neo4rs::{Graph, Row};
@@ -22,7 +22,7 @@ impl InventoryItemModelManager {
         page_size: u32,
         order_by: String,
         order_direction: String,
-        filter: InventoryItemQueryFilter,
+        filter: ItemQueryFilter,
     ) -> Option<PaginatedResponse<InventoryItem>> {
         let skip = page_index * page_size;
         let (query, params) = filter.to_cypher_query(

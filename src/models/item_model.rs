@@ -29,8 +29,7 @@ impl ItemModelManager {
                         MATCH (item:Item)
                         <FILTER>
                         OPTIONAL MATCH (item)-[:HAS_TRAIT]->(trait:Trait)
-                        WITH item,  c, COLLECT(trait.name) as item_traits
-
+                        WITH item, COLLECT(trait.name) as item_traits
                         RETURN
                         item.uuid as uuid,
                         COALESCE(item.effect, 'No effect') as effect,
