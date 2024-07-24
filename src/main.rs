@@ -19,7 +19,7 @@ use tracing_subscriber::EnvFilter;
 use crate::graphql::resolvers::root_resolver::QueryRoot;
 use crate::models::{
     inventory_item_model::InventoryItemModelManager, inventory_model::InventoryModelManager,
-    inventory_with_items_model::InventoryWithItemsModelManager,
+    inventory_with_items_model::InventoryWithItemsModelManager, item_model::ItemModelManager,
 };
 
 use tower_http::cors::{Any, CorsLayer};
@@ -77,8 +77,9 @@ async fn main() {
             InventoryItemModelManager::new(graph.clone()),
             InventoryWithItemsModelManager::new(
                 InventoryItemModelManager::new(graph.clone()),
-                InventoryModelManager::new(graph),
+                InventoryModelManager::new(graph.clone()),
             ),
+            ItemModelManager::new(graph),
         ),
         EmptyMutation,
         EmptySubscription,
