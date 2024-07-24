@@ -74,9 +74,9 @@ async fn main() {
     let schema = Schema::build(
         QueryRoot::new(
             InventoryModelManager::new(graph.clone()),
-            InventoryItemModelManager::new(graph.clone()),
+            InventoryItemModelManager::new(graph.clone(), ItemModelManager::new(graph.clone())),
             InventoryWithItemsModelManager::new(
-                InventoryItemModelManager::new(graph.clone()),
+                InventoryItemModelManager::new(graph.clone(), ItemModelManager::new(graph.clone())),
                 InventoryModelManager::new(graph.clone()),
             ),
             ItemModelManager::new(graph),

@@ -43,7 +43,7 @@ impl ItemModelManager {
                         COALESCE(item.usage_requirements, 'Not usable') as usage_requirements
                         ORDER BY <ORDER_FIELD> <ORDER_DIR>, uuid DESC
                         SKIP $skip LIMIT $limit"
-                .replace("<ORDER_FIELD>", Self::map_sort_field(&order_by))
+                .replace("<ORDER_FIELD>", self.map_sort_field(&order_by))
                 .replace(
                     "<ORDER_DIR>",
                     if order_direction == "ASC" {
@@ -92,7 +92,7 @@ impl ItemModelManager {
         None
     }
 
-    fn parse_item(&self, row: &Row) -> Option<Item> {
+    pub fn parse_item(&self, row: &Row) -> Option<Item> {
         let node_properties = row;
 
         Some(Item {
@@ -124,7 +124,7 @@ impl ItemModelManager {
         }
     }
 
-    fn map_sort_field(field: &str) -> &str {
+    pub fn map_sort_field(&self, field: &str) -> &str {
         match field {
             "name" => "name",
             "value" => "value",

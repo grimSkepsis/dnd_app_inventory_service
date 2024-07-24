@@ -4,15 +4,20 @@ use crate::graphql::schemas::{
     inventory_item_schema::InventoryItem, item_schema::ItemQueryFilter,
     paginated_response_schema::PaginatedResponse,
 };
+use crate::models::item_model::ItemModelManager;
 use neo4rs::{Graph, Row};
 
 pub struct InventoryItemModelManager {
     graph: Arc<Graph>,
+    item_model_manager: ItemModelManager,
 }
 
 impl InventoryItemModelManager {
-    pub fn new(graph: Arc<Graph>) -> Self {
-        Self { graph }
+    pub fn new(graph: Arc<Graph>, item_model_manager: ItemModelManager) -> Self {
+        Self {
+            graph,
+            item_model_manager,
+        }
     }
 
     pub async fn get_inventory_items(
@@ -47,7 +52,7 @@ impl InventoryItemModelManager {
                         COALESCE(item.usage_requirements, 'Not usable') as usage_requirements
                         ORDER BY <ORDER_FIELD> <ORDER_DIR>, uuid DESC
                         SKIP $skip LIMIT $limit"
-                .replace("<ORDER_FIELD>", Self::map_sort_field(&order_by))
+                .replace("<ORDER_FIELD>", self.map_sort_field(&order_by))
                 .replace(
                     "<ORDER_DIR>",
                     if order_direction == "ASC" {
@@ -100,46 +105,16 @@ impl InventoryItemModelManager {
     }
 
     fn parse_inventory_item(&self, row: &Row) -> Option<InventoryItem> {
-        let node_properties = row;
-
         Some(InventoryItem {
-            uuid: node_properties.get("uuid").unwrap(),
-            name: node_properties.get("name").unwrap(),
-            value: node_properties.get("value").unwrap(),
-            bulk: node_properties.get("bulk").unwrap(),
-            display_bulk: Self::calc_display_bulk(node_properties.get("bulk").unwrap()),
-            quantity: node_properties.get("quantity").unwrap(),
-            description: node_properties.get("description").unwrap(),
-            effect: node_properties.get("effect").unwrap(),
-            level: node_properties.get("level").unwrap(),
-            traits: node_properties.get("traits").unwrap(),
-            activation_cost: node_properties.get("activation_cost").unwrap(),
-            usage_requirements: node_properties.get("usage_requirements").unwrap(),
-            display_value: Self::calc_display_value(node_properties.get("value").unwrap()),
+            item: self.item_model_manager.parse_item(row).unwrap(),
+            quantity: row.get("quantity").unwrap(),
         })
     }
 
-    fn calc_display_value(value: u64) -> String {
-        let gp_value = value as f32 / 1000.0;
-        return format!("{} gp", gp_value.to_string());
-    }
-
-    fn calc_display_bulk(bulk_value: f32) -> String {
-        match bulk_value {
-            0.0 => return "Negligible".to_string(),
-            0.1 => return "Light".to_string(),
-            _ => return format!("{} bulk", bulk_value.to_string()),
-        }
-    }
-
-    fn map_sort_field(field: &str) -> &str {
+    fn map_sort_field(&self, field: &str) -> &str {
         match field {
-            "name" => "name",
-            "value" => "value",
-            "level" => "level",
             "quantity" => "quantity",
-            "bulk" => "bulk",
-            _ => "name", // Default field if input does not match
+            _ => self.item_model_manager.map_sort_field(field), // Default field if input does not match
         }
     }
 }
