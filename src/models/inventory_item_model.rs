@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
+use crate::graphql::schemas::inventory_item_schema::InventoryItemQuantityAdjustmentParams;
 use crate::graphql::schemas::{
     inventory_item_schema::InventoryItem, item_schema::ItemQueryFilter,
     paginated_response_schema::PaginatedResponse,
 };
 use crate::models::item_model::ItemModelManager;
-use neo4rs::{Graph, Row};
+use neo4rs::{query, Graph, Query, Row};
 
 pub struct InventoryItemModelManager {
     graph: Arc<Graph>,
@@ -102,6 +103,48 @@ impl InventoryItemModelManager {
             });
         }
         None
+    }
+
+    pub async fn add_or_remove_items_from_inventory(
+        &self,
+        inventory_uuid: String,
+        items: Vec<InventoryItemQuantityAdjustmentParams>,
+    ) -> bool {
+        // Create a new session
+        let mut txn = self.graph.start_txn().await.unwrap();
+
+        let result = txn
+            .run_queries(
+                items
+                    .into_iter()
+                    .map(|item| self.get_item_adjustment_query(inventory_uuid.clone(), item)),
+            )
+            .await;
+
+        if result.is_ok() {
+            txn.commit().await.unwrap();
+            true
+        } else {
+            txn.rollback().await.unwrap();
+            false
+        }
+    }
+
+    fn get_item_adjustment_query(
+        &self,
+        inventory_uuid: String,
+        item: InventoryItemQuantityAdjustmentParams,
+    ) -> Query {
+        return query(
+            "MATCH (inv:Inventory {uuid: $inventory_uuid}), (item:Item {uuid: $item_uuid})
+         MERGE (inv)-[rel:CONTAINS]->(item)
+         ON CREATE SET rel.quantity = $quantity_change
+         ON MATCH SET rel.quantity = rel.quantity + $quantity_change
+         RETURN item, inv, rel",
+        )
+        .param("inventory_uuid", inventory_uuid.clone())
+        .param("item_uuid", item.item_id.clone())
+        .param("quantity_change", item.quantity_change.clone());
     }
 
     fn parse_inventory_item(&self, row: &Row) -> Option<InventoryItem> {

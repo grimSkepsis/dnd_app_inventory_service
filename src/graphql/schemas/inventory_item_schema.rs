@@ -1,6 +1,5 @@
 use crate::graphql::schemas::item_schema::Item;
-use async_graphql::Object;
-use async_graphql::ID;
+use async_graphql::{InputObject, Object, ID};
 
 #[derive(Debug, Clone)]
 pub struct InventoryItem {
@@ -61,4 +60,10 @@ impl InventoryItem {
     async fn effect(&self) -> &str {
         &self.item.effect
     }
+}
+
+#[derive(Debug, Clone, InputObject)]
+pub struct InventoryItemQuantityAdjustmentParams {
+    pub item_id: String,
+    pub quantity_change: i32,
 }

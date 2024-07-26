@@ -8,6 +8,8 @@ use crate::models::{
 };
 use async_graphql::Object;
 
+use super::inventory_item_resolver::InventoryItemMutation;
+
 pub struct QueryRoot {
     inventory: InventoryQuery,
     inventory_items: InventoryItemQuery,
@@ -46,5 +48,23 @@ impl QueryRoot {
 
     async fn inventory_with_items(&self) -> &InventoryWithItemsQuery {
         &self.inventory_with_items
+    }
+}
+
+pub struct MutationRoot {
+    inventory_items: InventoryItemMutation,
+}
+impl MutationRoot {
+    pub fn new(inventory_item_model_manager: InventoryItemModelManager) -> Self {
+        Self {
+            inventory_items: InventoryItemMutation::new(inventory_item_model_manager),
+        }
+    }
+}
+
+#[Object]
+impl MutationRoot {
+    async fn inventory_items(&self) -> &InventoryItemMutation {
+        &self.inventory_items
     }
 }

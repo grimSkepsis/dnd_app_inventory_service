@@ -1,11 +1,12 @@
 // use async_graphql::parser::types::DirectiveLocation::Schema;
-use async_graphql::EmptyMutation;
+
 use async_graphql::EmptySubscription;
 use async_graphql::Schema;
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::routing::post;
 use axum::Router;
 use dotenv::dotenv;
+use graphql::resolvers::root_resolver::MutationRoot;
 use neo4rs::Graph;
 use std::env;
 use std::sync::Arc;
@@ -28,7 +29,7 @@ mod models;
 
 #[instrument(skip(schema, graph_glrequest))]
 async fn graphql_handler(
-    schema: Schema<QueryRoot, EmptyMutation, EmptySubscription>,
+    schema: Schema<QueryRoot, MutationRoot, EmptySubscription>,
     graph_glrequest: GraphQLRequest,
 ) -> GraphQLResponse {
     let inner_request = graph_glrequest.into_inner();
@@ -79,9 +80,12 @@ async fn main() {
                 InventoryItemModelManager::new(graph.clone(), ItemModelManager::new(graph.clone())),
                 InventoryModelManager::new(graph.clone()),
             ),
-            ItemModelManager::new(graph),
+            ItemModelManager::new(graph.clone()),
         ),
-        EmptyMutation,
+        MutationRoot::new(InventoryItemModelManager::new(
+            graph.clone(),
+            ItemModelManager::new(graph),
+        )),
         EmptySubscription,
     )
     .finish();

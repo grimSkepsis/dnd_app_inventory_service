@@ -1,6 +1,7 @@
 use crate::{
     graphql::schemas::{
-        inventory_item_schema::InventoryItem, item_schema::ItemQueryFilter,
+        inventory_item_schema::{InventoryItem, InventoryItemQuantityAdjustmentParams},
+        item_schema::ItemQueryFilter,
         paginated_response_schema::PaginatedResponse,
     },
     models::inventory_item_model::InventoryItemModelManager,
@@ -39,5 +40,31 @@ impl InventoryItemQuery {
                 filter,
             )
             .await
+    }
+}
+
+pub struct InventoryItemMutation {
+    inventory_item_model_manager: InventoryItemModelManager,
+}
+impl InventoryItemMutation {
+    pub fn new(inventory_item_model_manager: InventoryItemModelManager) -> Self {
+        Self {
+            inventory_item_model_manager,
+        }
+    }
+}
+
+#[Object]
+impl InventoryItemMutation {
+    pub async fn add_or_remove_items_from_inventory(
+        &self,
+        inventory_id: String,
+        items: Vec<InventoryItemQuantityAdjustmentParams>,
+    ) -> bool {
+        let res = self
+            .inventory_item_model_manager
+            .add_or_remove_items_from_inventory(inventory_id, items)
+            .await;
+        res
     }
 }
