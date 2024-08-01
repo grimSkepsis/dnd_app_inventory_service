@@ -67,6 +67,10 @@ impl Item {
     async fn effect(&self) -> &str {
         &self.effect
     }
+
+    pub async fn is_consumable(&self) -> bool {
+        self.traits.contains(&"Consumable".to_string())
+    }
 }
 
 #[derive(Debug, Clone, InputObject)]

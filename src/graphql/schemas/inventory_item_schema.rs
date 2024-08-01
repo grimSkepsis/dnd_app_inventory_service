@@ -60,6 +60,10 @@ impl InventoryItem {
     async fn effect(&self) -> &str {
         &self.item.effect
     }
+
+    async fn is_consumable(&self) -> bool {
+        self.item.traits.contains(&"Consumable".to_string())
+    }
 }
 
 #[derive(Debug, Clone, InputObject)]
