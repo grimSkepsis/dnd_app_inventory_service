@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::graphql::schemas::{
-    item_schema::{Item, ItemQueryFilter},
+    item_schema::{Item, ItemProperties, ItemQueryFilter},
     paginated_response_schema::PaginatedResponse,
 };
 use neo4rs::{Graph, Row};
@@ -97,30 +97,38 @@ impl ItemModelManager {
 
         Some(Item {
             uuid: node_properties.get("uuid").unwrap(),
-            name: node_properties.get("name").unwrap(),
-            value: node_properties.get("value").unwrap(),
-            bulk: node_properties.get("bulk").unwrap(),
-            display_bulk: Self::calc_display_bulk(node_properties.get("bulk").unwrap()),
-            description: node_properties.get("description").unwrap(),
-            effect: node_properties.get("effect").unwrap(),
-            level: node_properties.get("level").unwrap(),
-            traits: node_properties.get("traits").unwrap(),
-            activation_cost: node_properties.get("activation_cost").unwrap(),
-            usage_requirements: node_properties.get("usage_requirements").unwrap(),
-            display_value: Self::calc_display_value(node_properties.get("value").unwrap()),
+            properties: ItemProperties {
+                name: node_properties.get("name").unwrap(),
+                value: node_properties.get("value").unwrap_or_default(),
+                bulk: node_properties.get("bulk").unwrap_or_default(),
+                display_bulk: Self::calc_display_bulk(
+                    node_properties.get("bulk").unwrap_or_default(),
+                ),
+                description: node_properties.get("description").unwrap_or_default(),
+                effect: node_properties.get("effect").unwrap_or_default(),
+                level: node_properties.get("level").unwrap_or_default(),
+                traits: node_properties.get("traits").unwrap_or_default(),
+                activation_cost: node_properties.get("activation_cost").unwrap_or_default(),
+                usage_requirements: node_properties
+                    .get("usage_requirements")
+                    .unwrap_or_default(),
+                display_value: Self::calc_display_value(
+                    node_properties.get("value").unwrap_or_default(),
+                ),
+            },
         })
     }
 
-    fn calc_display_value(value: u64) -> String {
+    fn calc_display_value(value: u64) -> Option<String> {
         let gp_value = value as f32 / 1000.0;
-        return format!("{} gp", gp_value.to_string());
+        return Some(format!("{} gp", gp_value.to_string()));
     }
 
-    fn calc_display_bulk(bulk_value: f32) -> String {
+    fn calc_display_bulk(bulk_value: f32) -> Option<String> {
         match bulk_value {
-            0.0 => return "Negligible".to_string(),
-            0.1 => return "Light".to_string(),
-            _ => return format!("{} bulk", bulk_value.to_string()),
+            0.0 => return Some("Negligible".to_string()),
+            0.1 => return Some("Light".to_string()),
+            _ => return Some(format!("{} bulk", bulk_value.to_string())),
         }
     }
 

@@ -14,55 +14,58 @@ impl InventoryItem {
     }
 
     async fn name(&self) -> &str {
-        &self.item.name
+        &self.item.properties.name
     }
 
-    async fn level(&self) -> u16 {
-        self.item.level
+    async fn level(&self) -> Option<u16> {
+        self.item.properties.level
     }
 
     async fn quantity(&self) -> u32 {
         self.quantity
     }
 
-    async fn traits(&self) -> &Vec<String> {
-        &self.item.traits
+    async fn traits(&self) -> Option<&Vec<String>> {
+        self.item.properties.traits.as_ref()
     }
 
-    async fn activation_cost(&self) -> &str {
-        &self.item.activation_cost
+    async fn activation_cost(&self) -> Option<&str> {
+        self.item.properties.activation_cost.as_deref()
     }
 
-    async fn bulk(&self) -> f32 {
-        self.item.bulk
+    async fn bulk(&self) -> Option<f32> {
+        self.item.properties.bulk
     }
 
-    async fn display_bulk(&self) -> &str {
-        &self.item.display_bulk
+    async fn display_bulk(&self) -> Option<&str> {
+        self.item.properties.display_bulk.as_deref()
     }
 
-    async fn description(&self) -> &str {
-        &self.item.description
+    async fn description(&self) -> Option<&str> {
+        self.item.properties.description.as_deref()
     }
 
-    async fn usage_requirements(&self) -> &str {
-        &self.item.usage_requirements
+    async fn usage_requirements(&self) -> Option<&str> {
+        self.item.properties.usage_requirements.as_deref()
     }
 
-    async fn value(&self) -> u64 {
-        self.item.value
+    async fn value(&self) -> Option<u64> {
+        self.item.properties.value
     }
 
-    async fn display_value(&self) -> &str {
-        &self.item.display_value
+    async fn display_value(&self) -> Option<&str> {
+        self.item.properties.display_value.as_deref()
     }
 
-    async fn effect(&self) -> &str {
-        &self.item.effect
+    async fn effect(&self) -> Option<&str> {
+        self.item.properties.effect.as_deref()
     }
 
     async fn is_consumable(&self) -> bool {
-        self.item.traits.contains(&"Consumable".to_string())
+        match &self.item.properties.traits {
+            Some(traits) => traits.contains(&"Consumable".to_string()),
+            None => false,
+        }
     }
 }
 

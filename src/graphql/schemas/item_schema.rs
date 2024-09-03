@@ -3,19 +3,35 @@ use async_graphql::{InputObject, Object};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
+pub struct ItemProperties {
+    pub name: String,
+    pub level: Option<u16>,
+    pub traits: Option<Vec<String>>,
+    pub activation_cost: Option<String>,
+    pub bulk: Option<f32>,
+    pub display_bulk: Option<String>,
+    pub description: Option<String>,
+    pub usage_requirements: Option<String>,
+    pub value: Option<u64>,
+    pub display_value: Option<String>,
+    pub effect: Option<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct Item {
     pub uuid: ID,
-    pub name: String,
-    pub level: u16,
-    pub traits: Vec<String>,
-    pub activation_cost: String,
-    pub bulk: f32,
-    pub display_bulk: String,
-    pub description: String,
-    pub usage_requirements: String,
-    pub value: u64,
-    pub display_value: String,
-    pub effect: String,
+    pub properties: ItemProperties,
+    // pub name: String,
+    // pub level: u16,
+    // pub traits: Vec<String>,
+    // pub activation_cost: String,
+    // pub bulk: f32,
+    // pub display_bulk: String,
+    // pub description: String,
+    // pub usage_requirements: String,
+    // pub value: u64,
+    // pub display_value: String,
+    // pub effect: String,
 }
 
 #[Object]
@@ -25,51 +41,55 @@ impl Item {
     }
 
     async fn name(&self) -> &str {
-        &self.name
+        &self.properties.name
     }
 
-    async fn level(&self) -> u16 {
-        self.level
+    async fn level(&self) -> Option<u16> {
+        self.properties.level
     }
 
-    async fn traits(&self) -> &Vec<String> {
-        &self.traits
+    async fn traits(&self) -> Option<&Vec<String>> {
+        self.properties.traits.as_ref()
     }
 
-    async fn activation_cost(&self) -> &str {
-        &self.activation_cost
+    async fn activation_cost(&self) -> Option<&String> {
+        self.properties.activation_cost.as_ref()
     }
 
-    async fn bulk(&self) -> f32 {
-        self.bulk
+    async fn bulk(&self) -> Option<f32> {
+        self.properties.bulk
     }
 
-    async fn display_bulk(&self) -> &str {
-        &self.display_bulk
+    async fn display_bulk(&self) -> Option<&String> {
+        self.properties.display_bulk.as_ref()
     }
 
-    async fn description(&self) -> &str {
-        &self.description
+    async fn description(&self) -> Option<&String> {
+        self.properties.description.as_ref()
     }
 
-    async fn usage_requirements(&self) -> &str {
-        &self.usage_requirements
+    async fn usage_requirements(&self) -> Option<&String> {
+        self.properties.usage_requirements.as_ref()
     }
 
-    async fn value(&self) -> u64 {
-        self.value
+    async fn value(&self) -> Option<u64> {
+        self.properties.value
     }
 
-    async fn display_value(&self) -> &str {
-        &self.display_value
+    async fn display_value(&self) -> Option<&String> {
+        self.properties.display_value.as_ref()
     }
 
-    async fn effect(&self) -> &str {
-        &self.effect
+    async fn effect(&self) -> Option<&String> {
+        self.properties.effect.as_ref()
     }
 
     pub async fn is_consumable(&self) -> bool {
-        self.traits.contains(&"Consumable".to_string())
+        if let Some(ref traits) = self.properties.traits {
+            traits.contains(&"Consumable".to_string())
+        } else {
+            false
+        }
     }
 }
 
@@ -122,4 +142,19 @@ impl ItemQueryFilter {
 
         (full_query, params)
     }
+}
+
+#[derive(Debug, Clone, InputObject)]
+pub struct ItemCreationParams {
+    pub name: String,
+    pub level: u16,
+    pub traits: Vec<String>,
+    pub activation_cost: String,
+    pub bulk: f32,
+    pub display_bulk: String,
+    pub description: String,
+    pub usage_requirements: String,
+    pub value: u64,
+    pub display_value: String,
+    pub effect: String,
 }
