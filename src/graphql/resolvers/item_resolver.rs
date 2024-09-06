@@ -31,6 +31,10 @@ impl ItemQuery {
             .get_items(page_index, page_size, order_by, order_direction, filter)
             .await
     }
+
+    pub async fn get_item(&self, id: String) -> Option<Item> {
+        self.item_model_manager.get_item(&id).await
+    }
 }
 pub struct ItemMutation {
     item_model_manager: ItemModelManager,
