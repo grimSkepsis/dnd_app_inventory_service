@@ -2,24 +2,24 @@ use async_graphql::ID;
 use async_graphql::{InputObject, Object};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, InputObject)]
 pub struct ItemProperties {
     pub name: String,
     pub level: Option<u16>,
     pub traits: Option<Vec<String>>,
     pub activation_cost: Option<String>,
     pub bulk: Option<f32>,
-    pub display_bulk: Option<String>,
     pub description: Option<String>,
     pub usage_requirements: Option<String>,
     pub value: Option<u64>,
-    pub display_value: Option<String>,
     pub effect: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Item {
     pub uuid: ID,
+    pub display_bulk: Option<String>,
+    pub display_value: Option<String>,
     pub properties: ItemProperties,
     // pub name: String,
     // pub level: u16,
@@ -61,7 +61,7 @@ impl Item {
     }
 
     async fn display_bulk(&self) -> Option<&String> {
-        self.properties.display_bulk.as_ref()
+        self.display_bulk.as_ref()
     }
 
     async fn description(&self) -> Option<&String> {
@@ -77,7 +77,7 @@ impl Item {
     }
 
     async fn display_value(&self) -> Option<&String> {
-        self.properties.display_value.as_ref()
+        self.display_value.as_ref()
     }
 
     async fn effect(&self) -> Option<&String> {
@@ -142,19 +142,4 @@ impl ItemQueryFilter {
 
         (full_query, params)
     }
-}
-
-#[derive(Debug, Clone, InputObject)]
-pub struct ItemCreationParams {
-    pub name: String,
-    pub level: u16,
-    pub traits: Vec<String>,
-    pub activation_cost: String,
-    pub bulk: f32,
-    pub display_bulk: String,
-    pub description: String,
-    pub usage_requirements: String,
-    pub value: u64,
-    pub display_value: String,
-    pub effect: String,
 }

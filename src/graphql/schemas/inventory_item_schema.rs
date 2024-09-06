@@ -38,7 +38,7 @@ impl InventoryItem {
     }
 
     async fn display_bulk(&self) -> Option<&str> {
-        self.item.properties.display_bulk.as_deref()
+        self.item.display_bulk.as_deref()
     }
 
     async fn description(&self) -> Option<&str> {
@@ -54,7 +54,7 @@ impl InventoryItem {
     }
 
     async fn display_value(&self) -> Option<&str> {
-        self.item.properties.display_value.as_deref()
+        self.item.display_value.as_deref()
     }
 
     async fn effect(&self) -> Option<&str> {

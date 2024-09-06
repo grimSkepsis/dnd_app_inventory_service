@@ -1,6 +1,6 @@
 use crate::{
     graphql::schemas::{
-        item_schema::{Item, ItemQueryFilter},
+        item_schema::{Item, ItemProperties, ItemQueryFilter},
         paginated_response_schema::PaginatedResponse,
     },
     models::item_model::ItemModelManager,
@@ -30,5 +30,21 @@ impl ItemQuery {
         self.item_model_manager
             .get_items(page_index, page_size, order_by, order_direction, filter)
             .await
+    }
+}
+pub struct ItemMutation {
+    item_model_manager: ItemModelManager,
+}
+impl ItemMutation {
+    pub fn new(item_model_manager: ItemModelManager) -> Self {
+        Self { item_model_manager }
+    }
+}
+
+#[Object]
+impl ItemMutation {
+    pub async fn create_item(&self, params: ItemProperties) -> Option<Item> {
+        let res = self.item_model_manager.create_item(params).await;
+        res
     }
 }

@@ -1,10 +1,22 @@
-use std::sync::Arc;
-
 use crate::graphql::schemas::{
     item_schema::{Item, ItemProperties, ItemQueryFilter},
     paginated_response_schema::PaginatedResponse,
 };
+use async_graphql::ID;
 use neo4rs::{Graph, Row};
+use std::collections::HashMap;
+use std::sync::Arc;
+
+const ITEM_FIELD_PATTERN: &str = "item.uuid as uuid,
+COALESCE(item.effect, 'No effect') as effect,
+COALESCE(item.level, 0) as level,
+item.value as value,
+item_traits as traits,
+toFloat(COALESCE(item.bulk, 0)) as bulk,
+item.name as name,
+COALESCE(item.description,  'No description') as description,
+COALESCE(item.activation_cost,'Not activatible') as activation_cost,
+COALESCE(item.usage_requirements, 'Not usable') as usage_requirements";
 
 pub struct ItemModelManager {
     graph: Arc<Graph>,
@@ -31,19 +43,11 @@ impl ItemModelManager {
                         OPTIONAL MATCH (item)-[:HAS_TRAIT]->(trait:Trait)
                         WITH item, COLLECT(trait.name) as item_traits
                         RETURN
-                        item.uuid as uuid,
-                        COALESCE(item.effect, 'No effect') as effect,
-                        COALESCE(item.level, 0) as level,
-                        item.value as value,
-                        item_traits as traits,
-                        toFloat(COALESCE(item.bulk, 0)) as bulk,
-                        item.name as name,
-                        COALESCE(item.description,  'No description') as description,
-                        COALESCE(item.activation_cost,'Not activatible') as activation_cost,
-                        COALESCE(item.usage_requirements, 'Not usable') as usage_requirements
+                       <ITEM_FIELD_PATTERN>
                         ORDER BY <ORDER_FIELD> <ORDER_DIR>, uuid DESC
                         SKIP $skip LIMIT $limit"
                 .replace("<ORDER_FIELD>", self.map_sort_field(&order_by))
+                .replace("<ITEM_FIELD_PATTERN>", ITEM_FIELD_PATTERN)
                 .replace(
                     "<ORDER_DIR>",
                     if order_direction == "ASC" {
@@ -92,18 +96,87 @@ impl ItemModelManager {
         None
     }
 
+    pub async fn get_item(&self, uuid: &str) -> Option<Item> {
+        let query = format!(
+            "MATCH (item:Item {{uuid: '{}'}}) OPTIONAL MATCH (item)-[:HAS_TRAIT]->(trait:Trait) WITH item, COLLECT(trait.name) as item_traits RETURN {}",
+            uuid, ITEM_FIELD_PATTERN
+        );
+        let mut result = self.graph.execute(neo4rs::query(&query)).await.unwrap();
+        if let Ok(Some(row)) = result.next().await {
+            return self.parse_item(&row);
+        }
+        None
+    }
+
+    pub async fn create_item(&self, properties: ItemProperties) -> Option<Item> {
+        let mut params: HashMap<&str, String> = HashMap::new();
+        params.insert("name", properties.name.into());
+        params.insert(
+            "level",
+            properties.level.unwrap_or_default().to_string().into(),
+        );
+        params.insert(
+            "activation_cost",
+            properties.activation_cost.unwrap_or_default().into(),
+        );
+        params.insert(
+            "bulk",
+            properties.bulk.unwrap_or_default().to_string().into(),
+        );
+        params.insert(
+            "description",
+            properties.description.unwrap_or_default().into(),
+        );
+        params.insert(
+            "usage_requirements",
+            properties.usage_requirements.unwrap_or_default().into(),
+        );
+        params.insert(
+            "value",
+            properties.value.unwrap_or_default().to_string().into(),
+        );
+        params.insert("effect", properties.effect.unwrap_or_default().into());
+
+        // Build the Cypher query using parameterized placeholders
+        let query_string = &"CREATE (item:Item {
+            uuid: apoc.create.uuid(),
+            name: $name,
+            level: $level,
+            activation_cost: $activation_cost,
+            bulk: $bulk,
+            description: $description,
+            usage_requirements: $usage_requirements,
+            value: $value,
+            effect: $effect
+        }) RETURN item.uuid as uuid";
+
+        // Execute the query with parameters
+        let mut result = self
+            .graph
+            .execute(neo4rs::query(query_string).params(params))
+            .await
+            .unwrap();
+
+        if let Ok(Some(row)) = result.next().await {
+            let uuid: ID = row.get("uuid").unwrap();
+            return self.get_item(&uuid).await;
+        }
+        return None;
+    }
+
     pub fn parse_item(&self, row: &Row) -> Option<Item> {
         let node_properties = row;
 
         Some(Item {
             uuid: node_properties.get("uuid").unwrap(),
+            display_bulk: Self::calc_display_bulk(node_properties.get("bulk").unwrap_or_default()),
+            display_value: Self::calc_display_value(
+                node_properties.get("value").unwrap_or_default(),
+            ),
             properties: ItemProperties {
                 name: node_properties.get("name").unwrap(),
                 value: node_properties.get("value").unwrap_or_default(),
                 bulk: node_properties.get("bulk").unwrap_or_default(),
-                display_bulk: Self::calc_display_bulk(
-                    node_properties.get("bulk").unwrap_or_default(),
-                ),
                 description: node_properties.get("description").unwrap_or_default(),
                 effect: node_properties.get("effect").unwrap_or_default(),
                 level: node_properties.get("level").unwrap_or_default(),
@@ -112,9 +185,6 @@ impl ItemModelManager {
                 usage_requirements: node_properties
                     .get("usage_requirements")
                     .unwrap_or_default(),
-                display_value: Self::calc_display_value(
-                    node_properties.get("value").unwrap_or_default(),
-                ),
             },
         })
     }
