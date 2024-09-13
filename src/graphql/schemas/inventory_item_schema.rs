@@ -13,8 +13,8 @@ impl InventoryItem {
         &self.item.uuid
     }
 
-    async fn name(&self) -> &str {
-        &self.item.properties.name
+    async fn name(&self) -> Option<&String> {
+        self.item.properties.name.as_ref()
     }
 
     async fn level(&self) -> Option<u16> {

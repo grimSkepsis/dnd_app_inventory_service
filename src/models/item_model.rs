@@ -15,7 +15,7 @@ item_traits as traits,
 toFloat(COALESCE(item.bulk, 0)) as bulk,
 item.name as name,
 COALESCE(item.description,  'No description') as description,
-COALESCE(item.activation_cost,'Not activatible') as activation_cost,
+COALESCE(item.activation_cost,'n/a') as activation_cost,
 COALESCE(item.usage_requirements, 'Not usable') as usage_requirements";
 
 pub struct ItemModelManager {
@@ -110,7 +110,14 @@ impl ItemModelManager {
 
     pub async fn create_item(&self, properties: ItemProperties) -> Option<Item> {
         let mut params: HashMap<&str, String> = HashMap::new();
-        params.insert("name", properties.name.into());
+        params.insert(
+            "name",
+            properties
+                .name
+                .unwrap_or("Unnamed Item".to_string())
+                .to_string()
+                .into(),
+        );
         params.insert(
             "level",
             properties.level.unwrap_or_default().to_string().into(),

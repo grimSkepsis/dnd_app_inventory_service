@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, InputObject)]
 pub struct ItemProperties {
-    pub name: String,
+    pub name: Option<String>,
     pub level: Option<u16>,
     pub traits: Option<Vec<String>>,
     pub activation_cost: Option<String>,
@@ -21,17 +21,6 @@ pub struct Item {
     pub display_bulk: Option<String>,
     pub display_value: Option<String>,
     pub properties: ItemProperties,
-    // pub name: String,
-    // pub level: u16,
-    // pub traits: Vec<String>,
-    // pub activation_cost: String,
-    // pub bulk: f32,
-    // pub display_bulk: String,
-    // pub description: String,
-    // pub usage_requirements: String,
-    // pub value: u64,
-    // pub display_value: String,
-    // pub effect: String,
 }
 
 #[Object]
@@ -40,8 +29,8 @@ impl Item {
         &self.uuid
     }
 
-    async fn name(&self) -> &str {
-        &self.properties.name
+    async fn name(&self) -> Option<&String> {
+        self.properties.name.as_ref()
     }
 
     async fn level(&self) -> Option<u16> {

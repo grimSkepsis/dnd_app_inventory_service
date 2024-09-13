@@ -49,7 +49,7 @@ impl InventoryItemModelManager {
                         toFloat(COALESCE(item.bulk, 0)) as bulk,
                         item.name as name,
                         COALESCE(item.description,  'No description') as description,
-                        COALESCE(item.activation_cost,'Not activatible') as activation_cost,
+                        COALESCE(item.activation_cost,'n/a') as activation_cost,
                         COALESCE(item.usage_requirements, 'Not usable') as usage_requirements
                         ORDER BY <ORDER_FIELD> <ORDER_DIR>, uuid DESC
                         SKIP $skip LIMIT $limit"
