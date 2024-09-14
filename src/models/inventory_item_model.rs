@@ -45,6 +45,7 @@ impl InventoryItemModelManager {
                         COALESCE(item.effect, 'No effect') as effect,
                         COALESCE(item.level, 0) as level,
                         item.value as value,
+                        toInteger(COALESCE(item.value, '0')) AS numeric_value,
                         item_traits as traits,
                         toFloat(COALESCE(item.bulk, 0)) as bulk,
                         item.name as name,

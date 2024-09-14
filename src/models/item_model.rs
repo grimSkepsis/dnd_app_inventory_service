@@ -3,7 +3,7 @@ use crate::graphql::schemas::{
     paginated_response_schema::PaginatedResponse,
 };
 use async_graphql::ID;
-use neo4rs::{Graph, Row};
+use neo4rs::{BoltType, Graph, Row};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -11,6 +11,7 @@ const ITEM_FIELD_PATTERN: &str = "item.uuid as uuid,
 COALESCE(item.effect, 'No effect') as effect,
 COALESCE(item.level, 0) as level,
 item.value as value,
+toInteger(COALESCE(item.value, '0')) AS numeric_value,
 item_traits as traits,
 toFloat(COALESCE(item.bulk, 0)) as bulk,
 item.name as name,
@@ -109,7 +110,7 @@ impl ItemModelManager {
     }
 
     pub async fn create_item(&self, properties: ItemProperties) -> Option<Item> {
-        let mut params: HashMap<&str, String> = HashMap::new();
+        let mut params: HashMap<&str, BoltType> = HashMap::new();
         params.insert(
             "name",
             properties
@@ -118,18 +119,12 @@ impl ItemModelManager {
                 .to_string()
                 .into(),
         );
-        params.insert(
-            "level",
-            properties.level.unwrap_or_default().to_string().into(),
-        );
+        params.insert("level", properties.level.unwrap_or_default().into());
         params.insert(
             "activation_cost",
             properties.activation_cost.unwrap_or_default().into(),
         );
-        params.insert(
-            "bulk",
-            properties.bulk.unwrap_or_default().to_string().into(),
-        );
+        params.insert("bulk", properties.bulk.unwrap_or_default().into());
         params.insert(
             "description",
             properties.description.unwrap_or_default().into(),
@@ -171,18 +166,82 @@ impl ItemModelManager {
         return None;
     }
 
+    pub async fn update_item(&self, item_uuid: String, properties: ItemProperties) -> Option<Item> {
+        let mut params: HashMap<&str, BoltType> = HashMap::new();
+
+        if let Some(name) = properties.name {
+            params.insert("name", name.into());
+        }
+        if let Some(level) = properties.level {
+            params.insert("level", level.into());
+        }
+        if let Some(activation_cost) = properties.activation_cost {
+            params.insert("activation_cost", activation_cost.into());
+        }
+        if let Some(bulk) = properties.bulk {
+            params.insert("bulk", bulk.into());
+        }
+        if let Some(description) = properties.description {
+            params.insert("description", description.into());
+        }
+        if let Some(usage_requirements) = properties.usage_requirements {
+            params.insert("usage_requirements", usage_requirements.into());
+        }
+        if let Some(value) = properties.value {
+            params.insert("value", value.to_string().into());
+        }
+        if let Some(effect) = properties.effect {
+            params.insert("effect", effect.into());
+        }
+
+        // Build the Cypher query dynamically based on available properties
+        let set_clause: String = params
+            .keys()
+            .map(|key| format!("item.{} = ${}", key, key))
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        // Construct the final query string
+        let query_string = format!(
+            "MATCH (item:Item {{uuid: $item_uuid}}) SET {} RETURN item.uuid as uuid",
+            set_clause
+        );
+
+        // Insert item UUID into params
+        params.insert("item_uuid", item_uuid.into());
+
+        // Execute the query with parameters
+        let mut result = self
+            .graph
+            .execute(neo4rs::query(&query_string).params(params))
+            .await
+            .unwrap();
+
+        if let Ok(Some(row)) = result.next().await {
+            let uuid: ID = row.get("uuid").unwrap();
+            return self.get_item(&uuid).await;
+        }
+        return None;
+    }
+
     pub fn parse_item(&self, row: &Row) -> Option<Item> {
         let node_properties = row;
+        let value = Some(
+            node_properties
+                .get("value")
+                .unwrap_or("0")
+                .to_string()
+                .parse::<u64>()
+                .unwrap_or_default(),
+        );
 
         Some(Item {
             uuid: node_properties.get("uuid").unwrap(),
             display_bulk: Self::calc_display_bulk(node_properties.get("bulk").unwrap_or_default()),
-            display_value: Self::calc_display_value(
-                node_properties.get("value").unwrap_or_default(),
-            ),
+            display_value: Self::calc_display_value(value.unwrap()),
             properties: ItemProperties {
                 name: node_properties.get("name").unwrap(),
-                value: node_properties.get("value").unwrap_or_default(),
+                value,
                 bulk: node_properties.get("bulk").unwrap_or_default(),
                 description: node_properties.get("description").unwrap_or_default(),
                 effect: node_properties.get("effect").unwrap_or_default(),
@@ -212,7 +271,7 @@ impl ItemModelManager {
     pub fn map_sort_field(&self, field: &str) -> &str {
         match field {
             "name" => "name",
-            "value" => "value",
+            "value" => "numeric_value",
             "level" => "level",
             "bulk" => "bulk",
             _ => "name", // Default field if input does not match

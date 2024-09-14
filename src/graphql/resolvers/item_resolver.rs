@@ -51,4 +51,9 @@ impl ItemMutation {
         let res = self.item_model_manager.create_item(params).await;
         res
     }
+
+    pub async fn update_item(&self, item_uuid: String, params: ItemProperties) -> Option<Item> {
+        let res = self.item_model_manager.update_item(item_uuid, params).await;
+        res
+    }
 }
