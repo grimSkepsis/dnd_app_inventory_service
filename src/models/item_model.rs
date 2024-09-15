@@ -256,7 +256,7 @@ impl ItemModelManager {
     }
 
     fn calc_display_value(value: u64) -> Option<String> {
-        let gp_value = value as f32 / 1000.0;
+        let gp_value = value as f32 / 100.0;
         return Some(format!("{} gp", gp_value.to_string()));
     }
 
