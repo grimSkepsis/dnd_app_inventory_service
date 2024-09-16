@@ -176,10 +176,15 @@ impl InventoryItemModelManager {
     ) -> Query {
         return query(
             "MATCH (inv:Inventory {uuid: $inventory_uuid}), (item:Item {uuid: $item_uuid})
-         MERGE (inv)-[rel:CONTAINS]->(item)
-         ON CREATE SET rel.quantity = $quantity_change
-         ON MATCH SET rel.quantity = rel.quantity + $quantity_change
-         RETURN item, inv, rel",
+            MERGE (inv)-[rel:CONTAINS]->(item)
+            ON CREATE SET rel.quantity = $quantity_change
+            ON MATCH SET rel.quantity = rel.quantity + $quantity_change
+            WITH inv, item, rel
+            // Check if the new quantity is 0
+            FOREACH (ignoreMe IN CASE WHEN rel.quantity = 0 THEN [1] ELSE [] END |
+              DELETE rel
+            )
+            RETURN item, inv, rel",
         )
         .param("inventory_uuid", inventory_uuid.clone())
         .param("item_uuid", item.item_id.clone())
