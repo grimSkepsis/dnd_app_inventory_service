@@ -114,6 +114,29 @@ impl InventoryItemModelManager {
         // Create a new session
         let mut txn = self.graph.start_txn().await.unwrap();
 
+        //for all decrement operations, ensure we have enough quantity to decrement without going negative
+        for item in &items {
+            if item.quantity_change < 0 {
+                let result =
+                    self.graph
+                        .execute(self.get_current_item_quantities_query(
+                            inventory_uuid.clone(),
+                            item.clone(),
+                        ))
+                        .await;
+                if result.is_err() {
+                    txn.rollback().await.unwrap();
+                    return false;
+                }
+                let row = result.unwrap().next().await.unwrap().unwrap();
+                let current_quantity: i32 = row.get("quantity").unwrap();
+                if current_quantity < item.quantity_change.abs() {
+                    txn.rollback().await.unwrap();
+                    return false;
+                }
+            }
+        }
+
         let result = txn
             .run_queries(
                 items
@@ -129,6 +152,21 @@ impl InventoryItemModelManager {
             txn.rollback().await.unwrap();
             false
         }
+    }
+
+    fn get_current_item_quantities_query(
+        &self,
+        inventory_uuid: String,
+        item: InventoryItemQuantityAdjustmentParams,
+    ) -> Query {
+        // Execute the query and process the results
+        return query(
+            "MATCH (inv:Inventory {uuid: $inventory_uuid}), (item:Item {uuid: $item_uuid})
+             OPTIONAL MATCH (inv)-[rel:CONTAINS]->(item:Item)
+             RETURN item.uuid AS item_uuid, COALESCE(rel.quantity, 0) AS quantity",
+        )
+        .param("inventory_uuid", inventory_uuid.clone())
+        .param("item_uuid", item.item_id.clone());
     }
 
     fn get_item_adjustment_query(
