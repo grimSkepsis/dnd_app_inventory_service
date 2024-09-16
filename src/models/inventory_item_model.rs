@@ -154,6 +154,56 @@ impl InventoryItemModelManager {
         }
     }
 
+    pub async fn sell_items(
+        &self,
+        inventory_uuid: String,
+        items: Vec<InventoryItemQuantityAdjustmentParams>,
+    ) -> bool {
+        // Create a new session
+        let mut txn = self.graph.start_txn().await.unwrap();
+
+        //for all sell operations, ensure we have enough quantity to decrement without going negative
+        for item in &items {
+            //if the quantity change is positive, error since we are selling
+            if item.quantity_change >= 0 {
+                txn.rollback().await.unwrap();
+                return false;
+            }
+            let result = self
+                .graph
+                .execute(
+                    self.get_current_item_quantities_query(inventory_uuid.clone(), item.clone()),
+                )
+                .await;
+            if result.is_err() {
+                txn.rollback().await.unwrap();
+                return false;
+            }
+            let row = result.unwrap().next().await.unwrap().unwrap();
+            let current_quantity: i32 = row.get("quantity").unwrap();
+            if current_quantity < item.quantity_change.abs() {
+                txn.rollback().await.unwrap();
+                return false;
+            }
+        }
+
+        let result = txn
+            .run_queries(
+                items
+                    .into_iter()
+                    .map(|item| self.get_item_adjustment_query(inventory_uuid.clone(), item)),
+            )
+            .await;
+
+        if result.is_ok() {
+            txn.commit().await.unwrap();
+            true
+        } else {
+            txn.rollback().await.unwrap();
+            false
+        }
+    }
+
     fn get_current_item_quantities_query(
         &self,
         inventory_uuid: String,

@@ -67,4 +67,16 @@ impl InventoryItemMutation {
             .await;
         res
     }
+
+    pub async fn sell_items(
+        &self,
+        inventory_id: String,
+        items: Vec<InventoryItemQuantityAdjustmentParams>,
+    ) -> bool {
+        let res = self
+            .inventory_item_model_manager
+            .sell_items(inventory_id, items)
+            .await;
+        res
+    }
 }
