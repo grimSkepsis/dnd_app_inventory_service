@@ -6,7 +6,7 @@ use crate::graphql::schemas::{
     paginated_response_schema::PaginatedResponse,
 };
 use crate::models::item_model::ItemModelManager;
-use neo4rs::{query, Graph, Query, Row};
+use neo4rs::{query, BoltMap, Graph, Query, Row};
 
 pub struct InventoryItemModelManager {
     graph: Arc<Graph>,
@@ -187,21 +187,43 @@ impl InventoryItemModelManager {
             }
         }
 
-        let result = txn
-            .run_queries(
-                items
-                    .into_iter()
-                    .map(|item| self.get_item_adjustment_query(inventory_uuid.clone(), item)),
-            )
-            .await;
+        let mut total_value: u64 = 0;
 
-        if result.is_ok() {
-            txn.commit().await.unwrap();
-            true
-        } else {
-            txn.rollback().await.unwrap();
-            false
+        for item in items {
+            let result = txn
+                .execute(self.get_item_adjustment_query(inventory_uuid.clone(), item.clone()))
+                .await;
+            if result.is_err() {
+                txn.rollback().await.unwrap();
+                return false;
+            }
+
+            let mut stream = result.unwrap();
+            while let Ok(Some(row)) = stream.next(&mut txn).await {
+                let item = row.get::<BoltMap>("item").unwrap();
+                let quantity_change = row.get::<i32>("quantity_change").unwrap();
+                let value_str: &str = item.get("value").unwrap();
+                if let Ok(value) = value_str.parse::<u64>() {
+                    println!("Value: {}", value);
+                    println!("Quantity change: {}", quantity_change);
+                    total_value += value * quantity_change.abs() as u64;
+                } else {
+                    println!("Failed to parse value: {}", value_str);
+                }
+            }
         }
+
+        println!("Total value of sold items: {} copper pieces", total_value);
+
+        let sell_value = total_value / 2; // 50% of the total value
+        let (pp, gp, sp, cp) = self.calculate_coin_distribution(sell_value);
+
+        println!("Sell value: {} pp, {} gp, {} sp, {} cp", pp, gp, sp, cp);
+
+        // TODO: Update the inventory with the new coins
+
+        txn.commit().await.unwrap();
+        return true;
     }
 
     fn get_current_item_quantities_query(
@@ -224,6 +246,12 @@ impl InventoryItemModelManager {
         inventory_uuid: String,
         item: InventoryItemQuantityAdjustmentParams,
     ) -> Query {
+        //todo: remove this
+        println!(
+            "Debug: quantity_change before query: {}",
+            item.quantity_change
+        );
+        //todo: fix this so quantity change does not comeback as an overflow value
         return query(
             "MATCH (inv:Inventory {uuid: $inventory_uuid}), (item:Item {uuid: $item_uuid})
             MERGE (inv)-[rel:CONTAINS]->(item)
@@ -234,11 +262,11 @@ impl InventoryItemModelManager {
             FOREACH (ignoreMe IN CASE WHEN rel.quantity = 0 THEN [1] ELSE [] END |
               DELETE rel
             )
-            RETURN item, inv, rel",
+            RETURN item, toInteger($quantity_change) as quantity_change, inv.uuid as inventory_uuid",
         )
         .param("inventory_uuid", inventory_uuid.clone())
         .param("item_uuid", item.item_id.clone())
-        .param("quantity_change", item.quantity_change.clone());
+        .param("quantity_change", item.quantity_change);
     }
 
     fn parse_inventory_item(&self, row: &Row) -> Option<InventoryItem> {
@@ -253,5 +281,17 @@ impl InventoryItemModelManager {
             "quantity" => "quantity",
             _ => self.item_model_manager.map_sort_field(field), // Default field if input does not match
         }
+    }
+
+    fn calculate_coin_distribution(&self, value: u64) -> (u64, u64, u64, u64) {
+        let mut remaining = value;
+        let pp = remaining / 1000; // 1 pp = 1000 cp
+        remaining %= 1000;
+        let gp = remaining / 100; // 1 gp = 100 cp
+        remaining %= 100;
+        let sp = remaining / 10; // 1 sp = 10 cp
+        let cp = remaining % 10;
+
+        (pp, gp, sp, cp)
     }
 }
