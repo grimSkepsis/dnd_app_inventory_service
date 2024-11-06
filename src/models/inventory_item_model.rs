@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::graphql::schemas::inventory_item_schema::InventoryItemQuantityAdjustmentParams;
@@ -6,7 +7,7 @@ use crate::graphql::schemas::{
     paginated_response_schema::PaginatedResponse,
 };
 use crate::models::item_model::ItemModelManager;
-use neo4rs::{query, BoltMap, Graph, Query, Row};
+use neo4rs::{query, BoltInteger, BoltMap, Graph, Query, Row};
 
 pub struct InventoryItemModelManager {
     graph: Arc<Graph>,
@@ -159,6 +160,12 @@ impl InventoryItemModelManager {
         inventory_uuid: String,
         items: Vec<InventoryItemQuantityAdjustmentParams>,
     ) -> bool {
+        // Create lookup of item_id -> quantity_change
+        let item_quantities: HashMap<String, i32> = items
+            .iter()
+            .map(|item| (item.item_id.clone(), item.quantity_change))
+            .collect();
+
         // Create a new session
         let mut txn = self.graph.start_txn().await.unwrap();
 
@@ -194,17 +201,21 @@ impl InventoryItemModelManager {
                 .execute(self.get_item_adjustment_query(inventory_uuid.clone(), item.clone()))
                 .await;
             if result.is_err() {
-                txn.rollback().await.unwrap();
+                let _ = txn.rollback().await;
                 return false;
             }
 
             let mut stream = result.unwrap();
             while let Ok(Some(row)) = stream.next(&mut txn).await {
                 let item = row.get::<BoltMap>("item").unwrap();
-                let quantity_change = row.get::<i32>("quantity_change").unwrap();
+                let id_str: &str = item.get("uuid").unwrap();
                 let value_str: &str = item.get("value").unwrap();
-                if let Ok(value) = value_str.parse::<u64>() {
+
+                if let (Ok(value), Some(&quantity_change)) =
+                    (value_str.parse::<u64>(), item_quantities.get(id_str))
+                {
                     println!("Value: {}", value);
+                    println!("Item ID: {}", id_str);
                     println!("Quantity change: {}", quantity_change);
                     total_value += value * quantity_change.abs() as u64;
                 } else {
@@ -262,7 +273,7 @@ impl InventoryItemModelManager {
             FOREACH (ignoreMe IN CASE WHEN rel.quantity = 0 THEN [1] ELSE [] END |
               DELETE rel
             )
-            RETURN item, toInteger($quantity_change) as quantity_change, inv.uuid as inventory_uuid",
+            RETURN item, inv.uuid as inventory_uuid",
         )
         .param("inventory_uuid", inventory_uuid.clone())
         .param("item_uuid", item.item_id.clone())
