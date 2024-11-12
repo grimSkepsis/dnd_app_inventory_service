@@ -7,7 +7,7 @@ use crate::graphql::schemas::{
     paginated_response_schema::PaginatedResponse,
 };
 use crate::models::item_model::ItemModelManager;
-use neo4rs::{query, BoltInteger, BoltMap, Graph, Query, Row};
+use neo4rs::{query, BoltMap, Graph, Query, Row};
 
 pub struct InventoryItemModelManager {
     graph: Arc<Graph>,
@@ -194,7 +194,7 @@ impl InventoryItemModelManager {
             }
         }
 
-        let mut total_value: u64 = 0;
+        let mut total_value: i64 = 0;
 
         for item in items {
             let result = txn
@@ -212,12 +212,12 @@ impl InventoryItemModelManager {
                 let value_str: &str = item.get("value").unwrap();
 
                 if let (Ok(value), Some(&quantity_change)) =
-                    (value_str.parse::<u64>(), item_quantities.get(id_str))
+                    (value_str.parse::<i64>(), item_quantities.get(id_str))
                 {
                     println!("Value: {}", value);
                     println!("Item ID: {}", id_str);
                     println!("Quantity change: {}", quantity_change);
-                    total_value += value * quantity_change.abs() as u64;
+                    total_value += value * quantity_change.abs() as i64;
                 } else {
                     println!("Failed to parse value: {}", value_str);
                 }
@@ -232,9 +232,34 @@ impl InventoryItemModelManager {
         println!("Sell value: {} pp, {} gp, {} sp, {} cp", pp, gp, sp, cp);
 
         // TODO: Update the inventory with the new coins
+        let currency_result = txn
+            .execute(
+                self.get_adjust_inventory_currency_query(inventory_uuid.clone(), (pp, gp, sp, cp)),
+            )
+            .await;
+        if currency_result.is_err() {
+            _ = txn.rollback().await;
+            return false;
+        }
 
         txn.commit().await.unwrap();
         return true;
+    }
+
+    fn get_adjust_inventory_currency_query(
+        &self,
+        inventory_uuid: String,
+        currency: (i64, i64, i64, i64),
+    ) -> Query {
+        query(
+            "MATCH (inv:Inventory {uuid: $inventory_uuid})
+            SET inv.pp = inv.pp + $pp, inv.gp = inv.gp + $gp, inv.sp = inv.sp + $sp, inv.cp = inv.cp + $cp",
+        )
+        .param("inventory_uuid", inventory_uuid)
+        .param("pp", currency.0)
+        .param("gp", currency.1)
+        .param("sp", currency.2)
+        .param("cp", currency.3)
     }
 
     fn get_current_item_quantities_query(
@@ -294,7 +319,7 @@ impl InventoryItemModelManager {
         }
     }
 
-    fn calculate_coin_distribution(&self, value: u64) -> (u64, u64, u64, u64) {
+    fn calculate_coin_distribution(&self, value: i64) -> (i64, i64, i64, i64) {
         let mut remaining = value;
         let pp = remaining / 1000; // 1 pp = 1000 cp
         remaining %= 1000;
