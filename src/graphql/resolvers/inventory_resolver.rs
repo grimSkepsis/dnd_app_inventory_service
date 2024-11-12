@@ -1,4 +1,4 @@
-use crate::graphql::schemas::inventory_schema::Inventory;
+use crate::graphql::schemas::inventory_schema::{Inventory, InventoryCurrencyChangeInput};
 use crate::models::inventory_model::InventoryModelManager;
 use async_graphql::Object;
 
@@ -35,6 +35,31 @@ impl InventoryQuery {
     pub async fn get_inventory_by_owner_name(&self, name_term: String) -> Option<Inventory> {
         self.inventory_model_manager
             .get_inventory_by_owner_name(name_term)
+            .await
+    }
+}
+
+pub struct InventoryMutation {
+    inventory_model_manager: InventoryModelManager,
+}
+
+impl InventoryMutation {
+    pub fn new(inventory_model_manager: InventoryModelManager) -> Self {
+        Self {
+            inventory_model_manager,
+        }
+    }
+}
+
+#[Object]
+impl InventoryMutation {
+    pub async fn update_inventory_currency(
+        &self,
+        inventory_id: String,
+        params: InventoryCurrencyChangeInput,
+    ) -> Option<Inventory> {
+        self.inventory_model_manager
+            .update_inventory_currency(inventory_id, params)
             .await
     }
 }

@@ -84,7 +84,8 @@ async fn main() {
         ),
         MutationRoot::new(
             InventoryItemModelManager::new(graph.clone(), ItemModelManager::new(graph.clone())),
-            ItemModelManager::new(graph),
+            ItemModelManager::new(graph.clone()),
+            InventoryModelManager::new(graph),
         ),
         EmptySubscription,
     )

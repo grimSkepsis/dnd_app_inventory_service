@@ -9,6 +9,7 @@ use crate::models::{
 use async_graphql::Object;
 
 use super::inventory_item_resolver::InventoryItemMutation;
+use super::inventory_resolver::InventoryMutation;
 use super::item_resolver::ItemMutation;
 
 pub struct QueryRoot {
@@ -55,15 +56,18 @@ impl QueryRoot {
 pub struct MutationRoot {
     inventory_items: InventoryItemMutation,
     items: ItemMutation,
+    inventory: InventoryMutation,
 }
 impl MutationRoot {
     pub fn new(
         inventory_item_model_manager: InventoryItemModelManager,
         item_model_manager: ItemModelManager,
+        inventory_model_manager: InventoryModelManager,
     ) -> Self {
         Self {
             inventory_items: InventoryItemMutation::new(inventory_item_model_manager),
             items: ItemMutation::new(item_model_manager),
+            inventory: InventoryMutation::new(inventory_model_manager),
         }
     }
 }
@@ -75,5 +79,8 @@ impl MutationRoot {
     }
     async fn items(&self) -> &ItemMutation {
         &self.items
+    }
+    async fn inventory(&self) -> &InventoryMutation {
+        &self.inventory
     }
 }

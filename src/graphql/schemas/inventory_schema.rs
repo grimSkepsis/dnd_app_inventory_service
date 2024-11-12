@@ -1,3 +1,4 @@
+use async_graphql::InputObject;
 use async_graphql::Object;
 use async_graphql::ID;
 
@@ -10,6 +11,14 @@ pub struct Inventory {
     pub sp: u32,
     pub gp: u32,
     pub pp: u32,
+}
+
+#[derive(Debug, Clone, InputObject)]
+pub struct InventoryCurrencyChangeInput {
+    pub cp: i32,
+    pub sp: i32,
+    pub gp: i32,
+    pub pp: i32,
 }
 
 #[Object]
