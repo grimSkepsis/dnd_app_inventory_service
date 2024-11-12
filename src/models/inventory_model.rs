@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::graphql::schemas::inventory_schema::{Inventory, InventoryCurrencyChangeInput};
+use crate::graphql::schemas::{
+    inventory_schema::{Inventory, InventoryCurrencyChangeInput},
+    paginated_response_schema::PaginatedResponse,
+};
 use neo4rs::{query, BoltNode, Graph, Query, Row};
 
 pub struct InventoryModelManager {
@@ -19,6 +22,28 @@ impl InventoryModelManager {
             return self.parse_inventory(row);
         }
         None
+    }
+
+    pub async fn get_inventories(&self) -> PaginatedResponse<Inventory> {
+        let query = "MATCH(inv:Inventory) return (inv)";
+        let parameters = neo4rs::query(query);
+        let mut result = self.graph.execute(parameters).await.unwrap();
+
+        let mut inventories = Vec::<Inventory>::new();
+        while let Ok(Some(row)) = result.next().await {
+            inventories.push(self.parse_inventory(row).unwrap());
+        }
+
+        let total_entities = inventories.len();
+        let total_pages = 1;
+
+        return PaginatedResponse {
+            entities: inventories,
+            page_index: 0,
+            page_size: total_entities as u32,
+            total_entities: total_entities as u32,
+            total_pages,
+        };
     }
 
     pub async fn get_inventory_by_owner_uuid(&self, uuid: String) -> Option<Inventory> {

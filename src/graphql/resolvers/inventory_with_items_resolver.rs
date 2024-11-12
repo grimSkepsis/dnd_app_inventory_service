@@ -36,4 +36,25 @@ impl InventoryWithItemsQuery {
             )
             .await
     }
+
+    pub async fn get_inventory_with_items_by_id(
+        &self,
+        id: String,
+        page_index: u32,
+        page_size: u32,
+        order_by: String,
+        order_direction: String,
+        filter: ItemQueryFilter,
+    ) -> Option<InventoryWithItems> {
+        self.inventory_with_items_model_manager
+            .get_inventory_with_items_by_id(
+                id,
+                page_index,
+                page_size,
+                order_by,
+                order_direction,
+                filter,
+            )
+            .await
+    }
 }

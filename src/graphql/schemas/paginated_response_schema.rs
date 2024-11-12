@@ -1,9 +1,12 @@
-use crate::graphql::schemas::{inventory_item_schema::InventoryItem, item_schema::Item};
+use crate::graphql::schemas::{
+    inventory_item_schema::InventoryItem, inventory_schema::Inventory, item_schema::Item,
+};
 use async_graphql::{OutputType, SimpleObject};
 
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(concrete(name = "PaginatedItemResponse", params(Item)))]
 #[graphql(concrete(name = "PaginatedInventoryItemResponse", params(InventoryItem)))]
+#[graphql(concrete(name = "PaginatedInventoryResponse", params(Inventory)))]
 pub struct PaginatedResponse<T: OutputType> {
     pub entities: Vec<T>,
     pub total_entities: u32,

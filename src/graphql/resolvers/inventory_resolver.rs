@@ -1,4 +1,5 @@
 use crate::graphql::schemas::inventory_schema::{Inventory, InventoryCurrencyChangeInput};
+use crate::graphql::schemas::paginated_response_schema::PaginatedResponse;
 use crate::models::inventory_model::InventoryModelManager;
 use async_graphql::Object;
 
@@ -36,6 +37,10 @@ impl InventoryQuery {
         self.inventory_model_manager
             .get_inventory_by_owner_name(name_term)
             .await
+    }
+
+    pub async fn get_inventories(&self) -> PaginatedResponse<Inventory> {
+        self.inventory_model_manager.get_inventories().await
     }
 }
 
