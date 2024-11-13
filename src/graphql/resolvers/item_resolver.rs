@@ -2,6 +2,7 @@ use crate::{
     graphql::schemas::{
         item_schema::{Item, ItemProperties, ItemQueryFilter},
         paginated_response_schema::PaginatedResponse,
+        trait_schema::Trait,
     },
     models::item_model::ItemModelManager,
 };
@@ -34,6 +35,10 @@ impl ItemQuery {
 
     pub async fn get_item(&self, id: String) -> Option<Item> {
         self.item_model_manager.get_item(&id).await
+    }
+
+    pub async fn get_traits(&self) -> Vec<Trait> {
+        self.item_model_manager.get_traits().await
     }
 }
 pub struct ItemMutation {

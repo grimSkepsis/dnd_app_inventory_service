@@ -1,6 +1,7 @@
 use crate::graphql::schemas::{
     item_schema::{Item, ItemProperties, ItemQueryFilter},
     paginated_response_schema::PaginatedResponse,
+    trait_schema::Trait,
 };
 use async_graphql::ID;
 use neo4rs::{BoltType, Graph, Row};
@@ -107,6 +108,20 @@ impl ItemModelManager {
             return self.parse_item(&row);
         }
         None
+    }
+
+    pub async fn get_traits(&self) -> Vec<Trait> {
+        let query =
+            "MATCH (trait:Trait) RETURN trait.name as name, trait.description as description ORDER BY name";
+        let mut result = self.graph.execute(neo4rs::query(&query)).await.unwrap();
+        let mut traits = Vec::new();
+        while let Ok(Some(row)) = result.next().await {
+            traits.push(Trait {
+                name: row.get("name").unwrap(),
+                description: row.get("description").unwrap_or_default(),
+            });
+        }
+        traits
     }
 
     pub async fn create_item(&self, properties: ItemProperties) -> Option<Item> {
