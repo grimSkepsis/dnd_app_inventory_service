@@ -209,21 +209,37 @@ impl ItemModelManager {
             params.insert("effect", effect.into());
         }
 
-        // Build the Cypher query dynamically based on available properties
+        // Build the SET clause for regular properties
         let set_clause: String = params
             .keys()
             .map(|key| format!("item.{} = ${}", key, key))
             .collect::<Vec<_>>()
             .join(", ");
 
-        // Construct the final query string
+        // Construct the final query string with trait handling
         let query_string = format!(
-            "MATCH (item:Item {{uuid: $item_uuid}}) SET {} RETURN item.uuid as uuid",
+            "MATCH (item:Item {{uuid: $item_uuid}})
+             SET {}
+             WITH item
+             // Remove all existing trait relationships
+             OPTIONAL MATCH (item)-[r:HAS_TRAIT]->(:Trait)
+             DELETE r
+             WITH item
+             // Create new trait relationships
+             UNWIND $traits as trait_name
+             MERGE (t:Trait {{name: trait_name}})
+             MERGE (item)-[:HAS_TRAIT]->(t)
+             RETURN item.uuid as uuid",
             set_clause
         );
 
-        // Insert item UUID into params
+        // Insert item UUID and traits into params
         params.insert("item_uuid", item_uuid.into());
+        if let Some(traits) = properties.traits {
+            params.insert("traits", traits.into());
+        } else {
+            params.insert("traits", Vec::<String>::new().into());
+        }
 
         // Execute the query with parameters
         let mut result = self
@@ -236,7 +252,7 @@ impl ItemModelManager {
             let uuid: ID = row.get("uuid").unwrap();
             return self.get_item(&uuid).await;
         }
-        return None;
+        None
     }
 
     pub fn parse_item(&self, row: &Row) -> Option<Item> {
